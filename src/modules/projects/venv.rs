@@ -38,9 +38,19 @@ pub fn rebuild(venv: VirtualEnv) {
     
 }
 
-pub fn status() {
-    let cwd = env::current_dir().ok().unwrap();
-    let virtualenv = get_venv_info(cwd);
+/// Prints the status of the virtualenv for the current project.
+///
+/// # Arguments
+/// * `path` - A `PathBuf` object that holds the path to the project root.
+/// # Example
+/// ```
+/// use std::env;
+/// use valis_core::modules::projects::venv::status;
+/// let cwd = env::current_dir().ok().unwrap();
+/// status(cwd);
+/// ```
+pub fn status(path: PathBuf) {
+    let virtualenv = get_venv_info(path);
 
     let requirements_exist = virtualenv.requirements.exists();
     let requirements_icon = if requirements_exist { "👍" } else {"👎"};

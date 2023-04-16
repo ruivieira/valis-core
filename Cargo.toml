@@ -1,6 +1,6 @@
 [package]
 name = "valis-core"
-version = "0.1.4"
+version = "0.1.5"
 edition = "2021"
 exclude = [
     ".idea/*"
@@ -13,3 +13,5 @@ readme = "README.md"
 
 [dependencies]
 globmatch = "0.2.3"
+git2 = "0.17.1"
+home = "0.5.4"

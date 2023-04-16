@@ -1,10 +1,10 @@
-use std::process::Command;
-use std::process::Stdio;
+use globmatch::Matcher;
+use std::env;
 use std::io::BufRead;
 use std::io::BufReader;
-use std::env;
 use std::path::PathBuf;
-use globmatch::Matcher;
+use std::process::Command;
+use std::process::Stdio;
 
 /// Run a command string and outputs realtime output to stdout.
 ///

@@ -12,3 +12,4 @@ repository = "https://github.com/ruivieira/valis-core"
 readme = "README.md"
 
 [dependencies]
+globmatch = "0.2.3"

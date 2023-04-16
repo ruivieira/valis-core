@@ -5,6 +5,10 @@ edition = "2021"
 exclude = [
     ".idea/*"
 ]
-
+license-file = "LICENSE"
+description = "A library for workflow management"
+homepage = "https://github.com/ruivieira/valis-core"
+repository = "https://github.com/ruivieira/valis-core"
+readme = "README.md"
 
 [dependencies]

@@ -11,6 +11,9 @@ pub struct VirtualEnv {
 }
 
 /// Returns a `VirtualEnv` struct for the specified `PathBuf` path.
+/// Assumes that the virtualenvs are located in `~/.virtualenvs` and that
+/// the virtualenv name is the same as the project name.
+///
 /// # Arguments
 /// * `path` - A `PathBuf` object that holds the path to the project root.
 pub fn get_venv_info(path: PathBuf) -> VirtualEnv {
@@ -38,7 +41,9 @@ pub fn rebuild(venv: VirtualEnv) {
     
 }
 
-/// Prints the status of the virtualenv for the current project.
+/// Prints the status of the virtualenv for the current project at `path`.
+/// Assumes that the virtualenvs are located in `~/.virtualenvs` and that
+/// the virtualenv name is the same as the project name.
 ///
 /// # Arguments
 /// * `path` - A `PathBuf` object that holds the path to the project root.

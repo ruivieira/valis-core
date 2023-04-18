@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use super::modules::core as core;
+use super::super::core as core;
 
 /// `KindConfig` is a struct that holds the configuration for the kind cluster.
 /// - `version`: The version of the kind cluster to use.

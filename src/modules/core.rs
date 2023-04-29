@@ -40,3 +40,17 @@ pub fn get_os() -> String {
 pub fn get_files<'a>(root: PathBuf, pattern: &'a &str) -> Result<Matcher<'a, PathBuf>, String> {
     return globmatch::Builder::new(&pattern).build(root.to_str().unwrap().to_owned());
 }
+
+/// Check if a program is in the PATH.
+fn in_path(program: &str) -> bool {
+    if let Ok(path) = env::var("PATH") {
+        for p in path.split(":") {
+            let p_str = format!("{}/{}", p, program);
+            if fs::metadata(&p_str).is_ok() {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}

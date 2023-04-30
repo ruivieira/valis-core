@@ -1,5 +1,5 @@
 use globmatch::Matcher;
-use std::env;
+use std::{env, fs};
 use std::io::BufRead;
 use std::io::BufReader;
 use std::path::PathBuf;
@@ -42,7 +42,7 @@ pub fn get_files<'a>(root: PathBuf, pattern: &'a &str) -> Result<Matcher<'a, Pat
 }
 
 /// Check if a program is in the PATH.
-fn in_path(program: &str) -> bool {
+pub fn in_path(program: &str) -> bool {
     if let Ok(path) = env::var("PATH") {
         for p in path.split(":") {
             let p_str = format!("{}/{}", p, program);

@@ -1,3 +1,5 @@
+use colored::*;
+
 pub fn ack(message: &str) {
-    println!("🤖 ok, {}", message)
+    println!("🤖 {}, {}", "ok".green(), message)
 }

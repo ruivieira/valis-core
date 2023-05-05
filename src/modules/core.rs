@@ -1,10 +1,11 @@
-use globmatch::Matcher;
 use std::{env, fs};
 use std::io::BufRead;
 use std::io::BufReader;
 use std::path::PathBuf;
 use std::process::Command;
 use std::process::Stdio;
+
+use globmatch::Matcher;
 
 /// Run a command string and outputs realtime output to stdout.
 ///
@@ -53,4 +54,10 @@ pub fn in_path(program: &str) -> bool {
     }
 
     return false;
+}
+
+/// Check if a directory exists.
+fn directory_exists(path: &Path) -> bool {
+    // Check if the directory exists.
+    Path::new(path).exists()
 }

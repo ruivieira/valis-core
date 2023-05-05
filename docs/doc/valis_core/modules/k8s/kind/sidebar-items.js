@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":[["start","`start` is a function that starts a kind cluster by providing the [`KindConfig`] struct."]],"struct":[["KindConfig","`KindConfig` is a struct that holds the configuration for the kind cluster."]]};

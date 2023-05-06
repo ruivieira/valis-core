@@ -1,11 +1,14 @@
 use std::borrow::Cow::{self, Borrowed, Owned};
 
+use rlua::Lua;
 use rustyline::{CompletionType, Config, EditMode, Editor, Helper};
 use rustyline::completion::{Candidate, Completer};
 use rustyline::Context;
 use rustyline::highlight::Highlighter;
 use rustyline::hint::Hinter;
 use rustyline::validate::Validator;
+
+use crate::modules::script::engine::prepare_context;
 
 struct CustomCompleter {
     commands: Vec<&'static str>,
@@ -95,22 +98,35 @@ pub fn repl() {
         .completion_type(CompletionType::List)
         .build();
 
-    let commands = vec!["list", "add", "remove", "update", "help", "quit"];
+    let commands = vec!["git_clone", "run"];
     let completer = CustomCompleter { commands };
 
     let helper = CustomHelper { completer };
     let mut editor = Editor::with_config(config);
     editor.set_helper(Some(helper));
 
+    let lua = Lua::new();
+    lua.context(|lua_ctx| {
+        prepare_context(&lua_ctx);
+    });
+
     loop {
         let readline = editor.readline(">> ");
         match readline {
             Ok(line) => {
                 editor.add_history_entry(line.as_str());
-                println!("You entered: {:?}", line);
                 if line.trim() == "quit" {
                     break;
                 }
+                // Execute the Lua code
+                lua.context(|lua_ctx| {
+                    match lua_ctx.load(line.as_str()).exec() {
+                        Ok(_) => {}
+                        Err(e) => {
+                            eprintln!("Error: {}", e);
+                        }
+                    }
+                });
             }
             Err(_) => break,
         }

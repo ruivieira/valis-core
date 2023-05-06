@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":[["git",""],["venv",""]]};
+window.SIDEBAR_ITEMS = {"mod":[["cargo",""],["git",""],["venv",""]]};

@@ -37,10 +37,19 @@
 <a href="#37" id="37">37</a>
 <a href="#38" id="38">38</a>
 <a href="#39" id="39">39</a>
+<a href="#40" id="40">40</a>
+<a href="#41" id="41">41</a>
+<a href="#42" id="42">42</a>
+<a href="#43" id="43">43</a>
+<a href="#44" id="44">44</a>
+<a href="#45" id="45">45</a>
+<a href="#46" id="46">46</a>
 </pre><pre class="rust"><code><span class="kw">use </span>rlua::Lua;
 
+<span class="kw">use </span><span class="kw">crate</span>::modules::core;
 <span class="kw">use </span><span class="kw">crate</span>::modules::log::ack;
 <span class="kw">use </span><span class="kw">crate</span>::modules::projects::git::{GitOperations, SimpleRepo};
+<span class="kw">use </span><span class="kw">crate</span>::modules::software;
 
 <span class="kw">fn </span>remove_comment_lines(s: <span class="kw-2">&amp;</span>str) -&gt; String {
     s.lines()
@@ -72,8 +81,13 @@
                 <span class="kw">return </span><span class="prelude-val">Ok</span>(());
             })<span class="question-mark">?</span>;
         globals.set(<span class="string">&quot;git_clone&quot;</span>, git_clone)<span class="question-mark">?</span>;
+        <span class="kw">let </span>run =
+            lua_ctx.create_function(|<span class="kw">_</span>, (command): (String)| {
+                <span class="kw">return </span><span class="prelude-val">Ok</span>((core::run_buffered(<span class="kw-2">&amp;</span>command)));
+            })<span class="question-mark">?</span>;
+        globals.set(<span class="string">&quot;run&quot;</span>, run)<span class="question-mark">?</span>;
         lua_ctx.load(<span class="kw-2">&amp;</span>remove_comment_lines(script)).exec().unwrap();
         <span class="prelude-val">Ok</span>(())
     })
 }</code></pre></div>
-</section></main><div id="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="valis_core" data-themes="" data-resource-suffix="" data-rustdoc-version="1.68.0 (2c8cc3432 2023-03-06)" data-search-js="search-98d53477a794af0b.js" data-settings-js="settings-c3c521c753752a1a.js" data-settings-css="settings-08ddfdda51b8ee2e.css" ></div></body></html>
+</section></main><div id="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="valis_core" data-themes="" data-resource-suffix="" data-rustdoc-version="1.68.2 (9eb3afe9e 2023-03-27)" data-search-js="search-98d53477a794af0b.js" data-settings-js="settings-c3c521c753752a1a.js" data-settings-css="settings-08ddfdda51b8ee2e.css" ></div></body></html>

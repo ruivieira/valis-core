@@ -22,3 +22,6 @@ Cargo.lock
 #/target
 /Cargo.lock
 /.idea/
+publish.sh
+valis-core.iml
+publish.sh

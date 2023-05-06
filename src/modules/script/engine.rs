@@ -1,7 +1,9 @@
 use rlua::Lua;
 
+use crate::modules::core;
 use crate::modules::log::ack;
 use crate::modules::projects::git::{GitOperations, SimpleRepo};
+use crate::modules::software;
 
 fn remove_comment_lines(s: &str) -> String {
     s.lines()
@@ -33,6 +35,11 @@ pub fn execute(script: &str) -> Result<(), rlua::Error> {
                 return Ok(());
             })?;
         globals.set("git_clone", git_clone)?;
+        let run =
+            lua_ctx.create_function(|_, (command): (String)| {
+                return Ok((core::run_buffered(&command)));
+            })?;
+        globals.set("run", run)?;
         lua_ctx.load(&remove_comment_lines(script)).exec().unwrap();
         Ok(())
     })

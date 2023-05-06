@@ -32,6 +32,21 @@ pub fn run(command: &str) {
     }
 }
 
+pub fn run_buffered(command: &str) -> String {
+    let mut tokens = command.split(" ").collect::<Vec<&str>>();
+    let location = tokens[0];
+    tokens.remove(0);
+    let output = Command::new(location)
+        .args(tokens)
+        .output()
+        .expect("Failed to execute process.");
+
+    let stdout = String::from_utf8_lossy(&output.stdout).to_string();
+    print!("{}", stdout.to_owned());
+
+    return stdout.to_owned();
+}
+
 /// Return the OS name on which we are running.
 pub fn get_os() -> String {
     return env::consts::OS.to_owned();

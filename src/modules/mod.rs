@@ -1,3 +1,4 @@
+pub mod admin;
 pub mod core;
 pub mod k8s;
 pub mod log;

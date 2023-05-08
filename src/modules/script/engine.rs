@@ -78,6 +78,10 @@ pub fn prepare_context(ctx: &Context) {
         }
     }).unwrap();
     globals.set("get_dir", get_dir).unwrap();
+    let from_home = ctx.create_function(|_, (path): (String)| {
+        return core::from_home(&path).ok_or_else(|| LuaError::RuntimeError("Could not get path from home".to_string()));
+    }).unwrap();
+    globals.set("from_home", from_home).unwrap();
 }
 
 /// Execute a script.

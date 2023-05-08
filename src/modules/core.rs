@@ -7,6 +7,8 @@ use std::process::Stdio;
 
 use globmatch::Matcher;
 
+use dirs;
+
 /// Run a command string and outputs realtime output to stdout.
 ///
 /// # Arguments
@@ -92,4 +94,25 @@ pub fn get_dir() -> Result<String, std::io::Error> {
     let current_dir = env::current_dir()?;
     let current_dir_str = current_dir.to_str().unwrap_or("");
     Ok(current_dir_str.to_owned())
+}
+
+fn get_home_dir() -> Option<PathBuf> {
+    if let Some(home_dir) = dirs::home_dir() {
+        Some(home_dir)
+    } else {
+        None
+    }
+}
+
+/// Return the full path of a file in the user's home directory.
+/// # Arguments
+/// * `partial_path` - A string slice that holds the partial path of the file.
+pub fn from_home(partial_path: &str) -> Option<String> {
+    if let Some(home_dir) = get_home_dir() {
+        let full_path = Path::new(&home_dir).join(partial_path);
+        if let Some(full_path_str) = full_path.to_str() {
+            return Some(full_path_str.to_owned());
+        }
+    }
+    None
 }

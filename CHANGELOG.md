@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [unreleased]
+## [0.1.8] - 2023-05-08
 
 ### Bug Fixes
 
@@ -35,6 +35,11 @@ All notable changes to this project will be documented in this file.
 - Check if a directory exists
 - Add scripting engine
 - Add run command to the script engine
+- Add agile models
+- Add REPL
+- Separate context setting for Lua
+- Ability to read secrets from kdbx files
+- Add YAML value getters and setters
 
 ### Miscellaneous Tasks
 

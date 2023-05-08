@@ -92,6 +92,7 @@ impl Highlighter for CustomHelper {
 
 impl Validator for CustomHelper {}
 
+/// Start a REPL for the Lua engine.
 pub fn repl() {
     let config = Config::builder()
         .edit_mode(EditMode::Emacs)

@@ -1,6 +1,8 @@
 use rlua::{Context, Lua};
+use rlua::Error as LuaError;
 
 use crate::modules::core;
+use crate::modules::formats::text;
 use crate::modules::formats::yaml::{get_yaml_value, update_yaml_value};
 use crate::modules::log::ack;
 use crate::modules::projects::git::{GitOperations, SimpleRepo};
@@ -55,6 +57,27 @@ pub fn prepare_context(ctx: &Context) {
             return Ok(());
         }).unwrap();
     globals.set("yaml_set_value", update_yaml_value).unwrap();
+    let replace_matching_line = ctx.create_function(|_, (file_path, regex, new_value): (String, String, String)| {
+        match text::replace_matching_line(&file_path, &regex, &new_value) {
+            Ok(()) => Ok(()),
+            Err(e) => Err(LuaError::RuntimeError("Could not replace matching line".to_string())),
+        }
+    }).unwrap();
+    globals.set("replace_line", replace_matching_line).unwrap();
+    let set_dir = ctx.create_function(|_, (dir): (String)| {
+        match core::set_dir(&dir) {
+            Ok(()) => Ok(()),
+            Err(e) => Err(LuaError::RuntimeError("Could not set current directory".to_string())),
+        }
+    }).unwrap();
+    globals.set("set_dir", set_dir).unwrap();
+    let get_dir = ctx.create_function(|_, ()| {
+        match core::get_dir() {
+            Ok(dir) => Ok(dir),
+            Err(e) => Err(LuaError::RuntimeError("Could not get current directory".to_string())),
+        }
+    }).unwrap();
+    globals.set("get_dir", get_dir).unwrap();
 }
 
 /// Execute a script.

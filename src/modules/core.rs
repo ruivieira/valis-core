@@ -76,3 +76,20 @@ fn directory_exists(path: &Path) -> bool {
     // Check if the directory exists.
     Path::new(path).exists()
 }
+
+/// Set the current working directory.
+/// # Arguments
+/// * `dir` - A string slice that holds the directory to be set as the current working directory.
+pub fn set_dir(dir: &str) -> Result<(), std::io::Error> {
+    let path = Path::new(dir);
+    env::set_current_dir(&path)
+}
+
+/// Get the current working directory.
+/// # Returns
+/// A string slice that holds the current working directory.
+pub fn get_dir() -> Result<String, std::io::Error> {
+    let current_dir = env::current_dir()?;
+    let current_dir_str = current_dir.to_str().unwrap_or("");
+    Ok(current_dir_str.to_owned())
+}

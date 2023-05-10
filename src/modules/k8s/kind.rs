@@ -1,6 +1,10 @@
 use std::path::PathBuf;
 
-use super::super::core as core;
+use rlua::{Context, Table};
+
+use super::super::core;
+
+// use crate::modules::script::engine::FromLuaTable;
 
 /// `KindConfig` is a struct that holds the configuration for the kind cluster.
 /// - `version`: The version of the kind cluster to use.
@@ -11,6 +15,21 @@ pub struct KindConfig {
     pub config: Option<PathBuf>,
     pub context: String,
 }
+
+// impl FromLuaTable for KindConfig {
+//     fn from_lua(lua_table: Table<'_>, _ctx: Context<'_>) -> Result<Self, Err> {
+//         let version: Option<String> = lua_table.get("version").ok();
+//         let config: Option<String> = lua_table.get("config").ok();
+//         let context: Option<String> = lua_table.get("context").ok();
+//
+//         let default = KindConfig::default();
+//
+//         // Set default values if they are missing.
+//         let version = version.unwrap_or(default.version.to_string());
+//
+//         Ok(Self { version, config, context })
+//     }
+// }
 
 /// `default` is a function that returns a default [`KindConfig`] struct.
 /// The default [`KindConfig`] struct has the following values:

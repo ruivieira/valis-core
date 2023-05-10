@@ -1,2 +1,2 @@
-pub mod doctor;
 pub mod definitions;
+pub mod doctor;

@@ -27,3 +27,7 @@ kdbx-rs = "0.4.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_yaml = "0.8"
 dirs = "5.0.1"
+walkdir = "2.3.2"
+pulldown-cmark = "0.8.0"
+indicatif = "0.16.2"
+regex = "1.5.4"

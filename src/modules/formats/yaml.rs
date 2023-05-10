@@ -5,13 +5,17 @@ use std::fs::{File, OpenOptions};
 use std::io::{Read, Write};
 use std::path::Path;
 
-use rlua::{Context, Lua};
 use rlua::Value as LuaValue;
+use rlua::{Context, Lua};
 use serde::{Deserialize, Serialize};
 use serde_yaml::Mapping;
 use serde_yaml::Value as YamlValue;
 
-fn update_yaml_value_in_place(doc: &mut YamlValue, path: &str, new_value: &str) -> Result<(), Box<dyn Error>> {
+fn update_yaml_value_in_place(
+    doc: &mut YamlValue,
+    path: &str,
+    new_value: &str,
+) -> Result<(), Box<dyn Error>> {
     let path_segments: Vec<&str> = path.split('.').collect();
     let mut current_node = doc;
 
@@ -37,7 +41,11 @@ fn update_yaml_value_in_place(doc: &mut YamlValue, path: &str, new_value: &str) 
 /// * `file_path` - The path to the YAML file.
 /// * `path` - The dot-separated path to the YAML value to update.
 /// * `new_value` - The new value to set.
-pub fn update_yaml_value(file_path: &str, path: &str, new_value: &str) -> Result<(), Box<dyn Error>> {
+pub fn update_yaml_value(
+    file_path: &str,
+    path: &str,
+    new_value: &str,
+) -> Result<(), Box<dyn Error>> {
     // Read the YAML file
     let mut file = File::open(file_path)?;
     let mut contents = String::new();
@@ -66,7 +74,10 @@ pub fn update_yaml_value(file_path: &str, path: &str, new_value: &str) -> Result
 /// * `yaml_key_path` - The dot-separated path to the YAML value to retrieve.
 /// # Returns
 /// The YAML value as a `String`.
-pub fn get_yaml_value(file_path: &str, yaml_key_path: &str) -> Result<String, Box<dyn std::error::Error>> {
+pub fn get_yaml_value(
+    file_path: &str,
+    yaml_key_path: &str,
+) -> Result<String, Box<dyn std::error::Error>> {
     // Read the YAML file
     let mut file = File::open(file_path)?;
     let mut contents = String::new();
@@ -82,9 +93,14 @@ pub fn get_yaml_value(file_path: &str, yaml_key_path: &str) -> Result<String, Bo
     let mut current_node = &yaml_data;
     for key in keys.into_iter() {
         if let YamlValue::Mapping(ref map) = current_node {
-            current_node = map.get(&YamlValue::String(key.to_string())).ok_or_else(|| {
-                format!("Key '{}' not found in YAML key path: {}", key, yaml_key_path)
-            })?;
+            current_node = map
+                .get(&YamlValue::String(key.to_string()))
+                .ok_or_else(|| {
+                    format!(
+                        "Key '{}' not found in YAML key path: {}",
+                        key, yaml_key_path
+                    )
+                })?;
         } else {
             return Err(format!("Invalid YAML key path: {}", yaml_key_path).into());
         }

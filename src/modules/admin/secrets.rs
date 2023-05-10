@@ -2,8 +2,8 @@ use std::fs::File;
 use std::io::BufReader;
 use std::path::PathBuf;
 
-use kdbx_rs::{CompositeKey, Database};
 use kdbx_rs;
+use kdbx_rs::{CompositeKey, Database};
 
 #[derive(Clone)]
 pub struct Secret {
@@ -29,22 +29,26 @@ pub fn read_fields_from_entry(
     let locked_db = kdbx_rs::open(kdbx_file_path).unwrap();
     let db = locked_db.unlock(&composite_key).ok().unwrap();
 
-    let values = secrets.into_iter().map(|secret| {
-        let entry = db
-            .root()
-            .entries().find(|e| e.title().unwrap() == secret.entry);
+    let values = secrets
+        .into_iter()
+        .map(|secret| {
+            let entry = db
+                .root()
+                .entries()
+                .find(|e| e.title().unwrap() == secret.entry);
 
-        match entry {
-            None => return None,
-            Some(e) => {
-                let field_value = e.fields().find(|f| f.key() == secret.field);
-                match field_value {
-                    None => return None,
-                    Some(f) => return Some(f.value().unwrap().to_string()),
+            match entry {
+                None => return None,
+                Some(e) => {
+                    let field_value = e.fields().find(|f| f.key() == secret.field);
+                    match field_value {
+                        None => return None,
+                        Some(f) => return Some(f.value().unwrap().to_string()),
+                    }
                 }
-            }
-        };
-    }).collect::<Vec<Option<String>>>();
+            };
+        })
+        .collect::<Vec<Option<String>>>();
 
     Ok(values)
 }

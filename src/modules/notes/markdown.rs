@@ -6,6 +6,7 @@ use std::str::FromStr;
 use globmatch::Matcher;
 use lazy_static::lazy_static;
 use regex::Regex;
+use rlua::{Context, Lua, Table, ToLua, ToLuaMulti};
 
 use crate::modules::core::get_files;
 use crate::modules::notes::markdown::WikilinkType::TEXT;
@@ -24,6 +25,7 @@ pub struct Page {
     pub contents: String,
     pub wikilinks: Vec<WikiLink>,
 }
+
 
 pub trait PageLoader {
     fn from_path(path: &PathBuf) -> Self;

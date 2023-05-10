@@ -1,10 +1,14 @@
-use rlua::{Context, Lua, Table};
+use std::path::PathBuf;
+
+use rlua::{Context, Lua, Table, ToLua, ToLuaMulti};
 use rlua::Error as LuaError;
 
 use crate::modules::core;
 use crate::modules::formats::text;
 use crate::modules::formats::yaml::{get_yaml_value, update_yaml_value};
 use crate::modules::log::ack;
+use crate::modules::notes::markdown;
+use crate::modules::notes::markdown::Page;
 use crate::modules::projects::git;
 use crate::modules::projects::git::{GitOperations, SimpleRepo};
 
@@ -120,6 +124,31 @@ pub fn prepare_context(ctx: &Context) {
         })
         .unwrap();
     globals.set("git_from_root", git_from_root).unwrap();
+    let md_load = ctx
+        .create_function(|ctx, path: String| {
+            let mut pb = PathBuf::new();
+            pb.push(path);
+            let page: Page = markdown::PageLoader::from_path(&pb);
+            let table = ctx.create_table()?;
+            table.set("title", page.title.to_string())?;
+            table.set("path", page.path.to_str().unwrap_or(""))?;
+            table.set("contents", page.contents.to_string())?;
+            let wikilinks = page
+                .wikilinks
+                .into_iter()
+                .map(|wikilink| {
+                    let table = ctx.create_table().ok().unwrap();
+                    table.set("name", wikilink.name).ok().unwrap();
+                    table.set("link", wikilink.link).ok().unwrap();
+                    table.set("anchor", wikilink.anchor).ok().unwrap();
+                    table.set("link_type", wikilink.link_type as u8).ok().unwrap();
+                    table
+                }).collect::<Vec<Table>>();
+            table.set("wikilinks", wikilinks).ok().unwrap();
+
+            Ok(table)
+        }).unwrap();
+    globals.set("md_load", md_load).unwrap();
 }
 
 /// Execute a script.

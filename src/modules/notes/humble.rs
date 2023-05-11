@@ -54,17 +54,118 @@ pub fn build_backlinks(pages: &[Page]) -> HashMap<String, Vec<(String, usize)>> 
     backlinks
 }
 
+fn add_backlinks(page: &mut Page, backlinks: &HashMap<String, Vec<(String, usize)>>) -> Result<(), Box<dyn std::error::Error>> {
+    // Check if this page has any backlinks
+    if let Some(links) = backlinks.get(&page.title) {
+        // Convert the Vec<(String, usize)> into separate Vec<String> and Vec<usize>
+        let (backlink_titles, backlink_counts): (Vec<String>, Vec<usize>) = links.iter().map(|(title, count)| (title.clone(), *count)).unzip();
+
+        // Convert the Vec<String> and Vec<usize> into a single String each, separated by commas
+        let backlink_titles_string = backlink_titles.into_iter().map(|title| format!("\"{}\"", title)).collect::<Vec<String>>().join(", ");
+        let backlink_counts_string = backlink_counts.iter().map(|count| count.to_string()).collect::<Vec<_>>().join(", ");
+
+        // Find the end of the first "---\n"
+        let front_matter_end = page.contents.find("---\n").unwrap() + 4;
+
+        // Insert the backlinks and backlinks_count at the beginning of the page content
+        page.contents.insert_str(front_matter_end, &format!("backlinks: [{}]\n", backlink_titles_string));
+        page.contents.insert_str(front_matter_end + backlink_titles_string.len() + 14, &format!("backlinks_count: [{}]\n", backlink_counts_string));
+    }
+
+    Ok(())
+}
+
+fn save_pages_to_files(pages: &[Page], dest: &PathBuf) -> std::io::Result<()> {
+    // Create the contents subdirectory if it doesn't exist
+    let mut contents_dir = dest.clone();
+    contents_dir.push("posts");
+    fs::create_dir_all(&contents_dir)?;
+
+    for page in pages {
+        if page.title == "Index" {
+            // Save the Index page directly to dest
+            page.title == "_index";
+            page.save_to_file(&dest)?;
+        } else {
+            // Save other pages to the contents subdirectory
+            page.save_to_file(&contents_dir)?;
+        }
+    }
+
+    Ok(())
+}
+
+fn build_image_map(dir: &PathBuf, map: &mut HashMap<String, PathBuf>) -> std::io::Result<()> {
+    if dir.is_dir() {
+        for entry in fs::read_dir(dir)? {
+            let entry = entry?;
+            let path = entry.path();
+            if path.is_dir() {
+                build_image_map(&path, map)?;
+            } else if let Some(extension) = path.extension() {
+                if ["png", "jpg", "gif"].contains(&extension.to_str().unwrap()) {
+                    if let Some(filename) = path.file_name() {
+                        map.insert(filename.to_str().unwrap().to_string(), path.clone());
+                    }
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
+fn create_image_map(source_dir: &str) -> Result<HashMap<String, PathBuf>, std::io::Error> {
+    let mut image_map: HashMap<String, PathBuf> = HashMap::new();
+    let source_path = PathBuf::from(source_dir);
+    build_image_map(&source_path, &mut image_map)?;
+    Ok(image_map)
+}
+
+fn copy_images_from_page(page: &Page, image_map: &HashMap<String, PathBuf>, destination: &str) -> std::io::Result<()> {
+    let image_link_pattern = Regex::new(r"!\[\[(.*?)\]\]").unwrap();
+    let image_links: Vec<String> = image_link_pattern.captures_iter(&page.contents)
+        .filter_map(|cap| cap.get(1))
+        .map(|m| m.as_str().to_string())
+        .collect();
+
+    for link in image_links {
+        if let Some(image_path) = image_map.get(&link) {
+            let destination_path = Path::new(destination).join(&link);
+            if let Some(parent_dir) = destination_path.parent() {
+                fs::create_dir_all(parent_dir)?; // create all directories in the path if they don't exist
+            }
+            fs::copy(image_path, &destination_path)?;
+        }
+    }
+    Ok(())
+}
+
 /// Build a site using Humble.
 /// Reads markdown files from `source` and processes them into `destination`.
-pub fn build(source: PathBuf, destination: PathBuf) -> (Vec<Page>, HashMap<String, Vec<(String, usize)>>) {
-    let files = get_pages(source);
+pub fn build(source: PathBuf, destination: PathBuf, assets: PathBuf) -> (Vec<Page>, HashMap<String, Vec<(String, usize)>>) {
+    let files = get_pages(source.clone());
     println!("Filtering publishable");
     let pages = files.into_iter().filter(|page| {
         let mut lines = page.contents.split("\n");
         lines.any(|line| line.starts_with("publish: true"))
     }).collect::<Vec<Page>>();
     let backlinks = build_backlinks(&pages);
-    println!("Backlinks: {:?}", backlinks);
-    (pages, backlinks)
+
+    let updated_pages = pages.into_iter().map(|mut page| {
+        add_backlinks(&mut page, &backlinks).ok().unwrap();
+        page
+    }).collect::<Vec<Page>>();
+
+    save_pages_to_files(&updated_pages, &destination).ok().unwrap();
+
+    let image_map = create_image_map(source.clone().to_str().unwrap()).ok().unwrap();
+
+    let saved_pages = updated_pages.into_iter().map(|page| {
+        copy_images_from_page(&page, &image_map, assets.to_str().unwrap()).ok().unwrap();
+        page
+    }).collect::<Vec<Page>>();
+
+    // println!("Pages: {:?}", updated_pages);
+    (saved_pages, backlinks)
 }
 

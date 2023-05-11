@@ -1,5 +1,7 @@
 use std::error::Error;
 use std::fs;
+use std::fs::File;
+use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
@@ -24,6 +26,63 @@ pub struct Page {
     pub path: PathBuf,
     pub contents: String,
     pub wikilinks: Vec<WikiLink>,
+}
+
+impl Clone for Page {
+    fn clone(&self) -> Self {
+        Page {
+            title: self.title.clone(),
+            path: self.path.clone(),
+            contents: self.contents.clone(),
+            wikilinks: self.wikilinks.clone(),
+        }
+    }
+}
+
+fn convert_wikilinks_to_hugo(contents: &str) -> String {
+    // Regular expression to match wikilinks
+    let re = Regex::new(r"(!?)\[\[(.*?)\]\]").unwrap();
+
+    // Function to convert a matched wikilink to Hugo format
+    let replace_func = |caps: &regex::Captures| {
+        let is_image = &caps[1] == "!";
+        let link_and_name = &caps[2];
+
+        // Check if the matched link is an image
+        if is_image {
+            format!("{{{{< figure src=\"/assets/{}\" alt=\"{}\" >}}}}", link_and_name, link_and_name)
+        }
+        // Check if the matched link contains a '|'
+        else if let Some(pipe_index) = link_and_name.find('|') {
+            // If it does, split the string on this character to get the link and the alternate name
+            let (link, name) = link_and_name.split_at(pipe_index);
+            let name = &name[1..]; // Remove the leading '|'
+            format!("[{}]({{{{< ref \"{}\" >}}}})", name, link)
+        } else {
+            // If there's no '|', use the entire match as both the link and the name
+            format!("[{}]({{{{< ref \"{}\" >}}}})", link_and_name, link_and_name)
+        }
+    };
+
+    // Replace all matches in the contents
+    re.replace_all(contents, replace_func).into_owned()
+}
+
+impl Page {
+    pub fn save_to_file(&self, directory: &PathBuf) -> std::io::Result<()> {
+        // Construct the full file path
+        let mut file_path = directory.clone();
+        file_path.push(format!("{}.md", &self.title));
+
+        // Open a file in write-only mode
+        let mut file = File::create(&file_path)?;
+
+        // Convert wikilinks to Hugo format
+        let contents = convert_wikilinks_to_hugo(&self.contents);
+
+        // Write the contents to file
+        file.write_all(contents.as_bytes())
+    }
 }
 
 
@@ -54,6 +113,7 @@ impl PageLoader for Page {
 
 #[derive(Debug)]
 #[derive(PartialEq)]
+#[derive(Copy, Clone)]
 pub enum WikilinkType {
     IMAGE,
     TEXT,
@@ -66,6 +126,18 @@ pub struct WikiLink {
     pub anchor: String,
     pub link_type: WikilinkType,
     pub original: String,
+}
+
+impl Clone for WikiLink {
+    fn clone(&self) -> Self {
+        WikiLink {
+            name: self.name.to_string(),
+            link: self.link.to_string(),
+            anchor: self.anchor.to_string(),
+            link_type: self.link_type.clone(),
+            original: self.original.to_string(),
+        }
+    }
 }
 
 pub fn get_markdown_files<'a>(root: PathBuf) -> Result<Matcher<'a, PathBuf>, String> {

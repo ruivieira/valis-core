@@ -54,7 +54,18 @@ pub fn build_backlinks(pages: &[Page]) -> HashMap<String, Vec<(String, usize)>> 
     backlinks
 }
 
+fn replace_first(input: &str, from: &str, to: &str) -> String {
+    let start_index = match input.find(from) {
+        Some(index) => index,
+        None => return input.to_string(),
+    };
+    let end_index = start_index + from.len();
+    [&input[..start_index], to, &input[end_index..]].concat()
+}
+
 fn add_backlinks(page: &mut Page, backlinks: &HashMap<String, Vec<(String, usize)>>) -> Result<(), Box<dyn std::error::Error>> {
+    let empty = "backlinks: []\nbacklinks_count: []\n".to_string();
+
     // Check if this page has any backlinks
     if let Some(links) = backlinks.get(&page.title) {
         // Convert the Vec<(String, usize)> into separate Vec<String> and Vec<usize>
@@ -70,6 +81,9 @@ fn add_backlinks(page: &mut Page, backlinks: &HashMap<String, Vec<(String, usize
         // Insert the backlinks and backlinks_count at the beginning of the page content
         page.contents.insert_str(front_matter_end, &format!("backlinks: [{}]\n", backlink_titles_string));
         page.contents.insert_str(front_matter_end + backlink_titles_string.len() + 14, &format!("backlinks_count: [{}]\n", backlink_counts_string));
+    } else {
+        let contents = replace_first(&page.contents, "---", &format!("---\n{}", empty));
+        page.contents = contents;
     }
 
     Ok(())
@@ -103,7 +117,7 @@ fn build_image_map(dir: &PathBuf, map: &mut HashMap<String, PathBuf>) -> std::io
             if path.is_dir() {
                 build_image_map(&path, map)?;
             } else if let Some(extension) = path.extension() {
-                if ["png", "jpg", "gif"].contains(&extension.to_str().unwrap()) {
+                if ["png", "jpg", "gif", "svg"].contains(&extension.to_str().unwrap()) {
                     if let Some(filename) = path.file_name() {
                         map.insert(filename.to_str().unwrap().to_string(), path.clone());
                     }

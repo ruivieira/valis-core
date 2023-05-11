@@ -17,7 +17,6 @@ pub fn get_pages(source: PathBuf) -> Vec<Page> {
     let files = markdown::get_markdown_files(source).ok().unwrap();
     let pathbufs = files.into_iter().map(|p| p.ok().unwrap()).collect::<Vec<PathBuf>>();
     let pages = pathbufs.into_iter().map(|path| { PageLoader::from_path(&path) }).collect::<Vec<Page>>();
-    (&pages).into_iter().for_each(|page| println!("{:?}", page.wikilinks));
     return pages;
 }
 
@@ -157,13 +156,45 @@ fn copy_images_from_page(page: &Page, image_map: &HashMap<String, PathBuf>, dest
 /// Build a site using Humble.
 /// Reads markdown files from `source` and processes them into `destination`.
 pub fn build(source: PathBuf, destination: PathBuf, assets: PathBuf) -> (Vec<Page>, HashMap<String, Vec<(String, usize)>>) {
+    let search_markdown_spinner = ProgressBar::new_spinner();
+    search_markdown_spinner.set_style(
+        ProgressStyle::default_spinner()
+            .tick_chars("⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏")
+            .template("{spinner} Searching for Markdown files..."),
+    );
+    search_markdown_spinner.enable_steady_tick(100);
+
     let files = get_pages(source.clone());
-    println!("Filtering publishable");
+
+    search_markdown_spinner.finish_with_message("Finished searching for Markdown files.");
+
+    let filter_publishable_spinner = ProgressBar::new_spinner();
+    filter_publishable_spinner.set_style(
+        ProgressStyle::default_spinner()
+            .tick_chars("⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏")
+            .template("{spinner} Filtering publishable..."),
+    );
+    filter_publishable_spinner.enable_steady_tick(100);
+
     let pages = files.into_iter().filter(|page| {
         let mut lines = page.contents.split("\n");
         lines.any(|line| line.starts_with("publish: true"))
     }).collect::<Vec<Page>>();
+
+    filter_publishable_spinner.finish_with_message("Finished filtering publishable.");
+
+    let backlinks_spinner = ProgressBar::new_spinner();
+    backlinks_spinner.set_style(
+        ProgressStyle::default_spinner()
+            .tick_chars("⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏")
+            .template("{spinner} Searching backlinks..."),
+    );
+    backlinks_spinner.enable_steady_tick(100);
+
+
     let backlinks = build_backlinks(&pages);
+
+    backlinks_spinner.finish_with_message("Finished searching publishable.");
 
     let updated_pages = pages.into_iter().map(|mut page| {
         add_backlinks(&mut page, &backlinks).ok().unwrap();
@@ -172,6 +203,14 @@ pub fn build(source: PathBuf, destination: PathBuf, assets: PathBuf) -> (Vec<Pag
 
     save_pages_to_files(&updated_pages, &destination).ok().unwrap();
 
+    let copy_images_spinner = ProgressBar::new_spinner();
+    copy_images_spinner.set_style(
+        ProgressStyle::default_spinner()
+            .tick_chars("⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏")
+            .template("{spinner} Copying images..."),
+    );
+    copy_images_spinner.enable_steady_tick(100);
+
     let image_map = create_image_map(source.clone().to_str().unwrap()).ok().unwrap();
 
     let saved_pages = updated_pages.into_iter().map(|page| {
@@ -179,7 +218,7 @@ pub fn build(source: PathBuf, destination: PathBuf, assets: PathBuf) -> (Vec<Pag
         page
     }).collect::<Vec<Page>>();
 
-    // println!("Pages: {:?}", updated_pages);
+    copy_images_spinner.finish_with_message("Finished copying images.");
     (saved_pages, backlinks)
 }
 

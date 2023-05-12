@@ -5,5 +5,6 @@ pub mod k8s;
 pub mod log;
 pub mod notes;
 pub mod projects;
+pub mod tasks;
 pub mod script;
 pub mod software;

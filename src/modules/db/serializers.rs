@@ -6,7 +6,7 @@ use rusqlite::types::FromSqlError;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde::de::Error;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct SerializableDateTime(DateTime<Utc>);
 
 impl Serialize for SerializableDateTime {
@@ -59,5 +59,8 @@ impl SerializableDateTime {
     }
     pub fn with_timezone(&self, tz: &Utc) -> SerializableDateTime {
         SerializableDateTime(self.0.with_timezone(tz))
+    }
+    pub fn now() -> Self {
+        SerializableDateTime(Utc::now())
     }
 }

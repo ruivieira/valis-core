@@ -1,16 +1,21 @@
+use std::{env, fs, io};
 use std::path::PathBuf;
 
 use rlua::{Context, Lua, Table, ToLua, ToLuaMulti};
 use rlua::Error as LuaError;
+use tokio::runtime::Runtime;
 
 use crate::modules::core;
+use crate::modules::db::DatabaseOperations;
 use crate::modules::formats::text;
 use crate::modules::formats::yaml::{get_yaml_value, update_yaml_value};
 use crate::modules::log::ack;
 use crate::modules::notes::markdown;
 use crate::modules::notes::markdown::Page;
-use crate::modules::projects::git;
+use crate::modules::projects::{agile, git};
+use crate::modules::projects::agile::Project;
 use crate::modules::projects::git::{GitOperations, SimpleRepo};
+use crate::modules::tasks::todoist;
 
 // pub trait FromLuaTable: Sized {
 //     fn from_lua(lua_table: Table<'_>, ctx: Context<'_>) -> Result<Self, Err>;
@@ -149,6 +154,34 @@ pub fn prepare_context(ctx: &Context) {
             Ok(table)
         }).unwrap();
     globals.set("md_load", md_load).unwrap();
+    let todoist_sync = ctx
+        .create_function(|_, db: String| {
+            match env::var("TODOIST_TOKEN") {
+                Ok(token) => {
+                    todoist::init_db(&db);
+                    Runtime::new().unwrap().block_on(todoist::sync(&token, &db)).unwrap();
+                }
+                Err(e) => {
+                    println!("Failed to read TODOIST_TOKEN: {}", e);
+                }
+            }
+            Ok(())
+        })
+        .unwrap();
+    globals.set("todoist_sync", todoist_sync).unwrap();
+    let agile_create_project = ctx
+        .create_function(|_, (name, description, path): (String, String, String)| {
+            agile::init_db(&path);
+            let project = agile::Project {
+                name: name,
+                description: description,
+                ..Default::default()
+            };
+            project.save(&path);
+            Ok(())
+        })
+        .unwrap();
+    globals.set("agile_create_project", agile_create_project).unwrap();
 }
 
 /// Execute a script.

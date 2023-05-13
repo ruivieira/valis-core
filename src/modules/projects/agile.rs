@@ -1,10 +1,14 @@
+use std::fmt::Error;
+
 use chrono::{DateTime, Utc};
 use rusqlite::{Connection, params, Result};
 use serde::{Deserialize, Serialize, Serializer};
 
 use uuid::Uuid;
 
+use crate::modules::db;
 use crate::modules::db::serializers;
+use crate::modules::db::serializers::SerializableDateTime;
 
 #[derive(Serialize, Deserialize)]
 pub struct Project {
@@ -13,6 +17,57 @@ pub struct Project {
     pub description: String,
     pub created_at: serializers::SerializableDateTime,
     pub updated_at: serializers::SerializableDateTime,
+}
+
+impl db::DatabaseOperations<String> for Project {
+    /// Create a new project and save it
+    fn save(&self, db: &str) -> Result<(), Error> {
+        let conn = Connection::open(db).ok().unwrap();
+        let id = Uuid::new_v4();
+        let now = Utc::now().to_string();
+
+        conn.execute(
+            "INSERT INTO project (id, name, description, created_at, updated_at) VALUES (?1, ?2, ?3, ?4, ?5)",
+            params![id.as_bytes(), self.name, self.description, now, now],
+        ).ok().unwrap();
+
+        Ok(())
+    }
+    // List All projects
+    fn get_all(&self, db: &str) -> Result<Vec<Project>, Error> {
+        let conn = Connection::open(db).ok().unwrap();
+        let mut stmt = conn.prepare("SELECT * FROM project").ok().unwrap();
+        let rows = stmt.query_map((), |row| {
+            let id: Vec<u8> = row.get(0).ok().unwrap();
+            Ok(Project {
+                id: Uuid::from_slice(&id).unwrap(),
+                name: row.get(1).ok().unwrap(),
+                description: row.get(2).ok().unwrap(),
+                created_at: row.get(3).ok().unwrap(),
+                updated_at: row.get(4).ok().unwrap(),
+            })
+        }).ok().unwrap();
+
+        let mut projects = Vec::new();
+        for project in rows {
+            projects.push(project.ok().unwrap());
+        }
+
+        Ok(projects)
+    }
+}
+
+impl Default for Project {
+    fn default() -> Self {
+        let now = SerializableDateTime::now();
+        Self {
+            id: Uuid::new_v4(),
+            name: "Default name".to_string(),
+            description: "Default description".to_string(),
+            created_at: now.clone(),
+            updated_at: now.clone(),
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize)]
@@ -26,7 +81,7 @@ pub struct Sprint {
     pub updated_at: serializers::SerializableDateTime,
 }
 
-fn init_db(db: &str) -> Result<()> {
+pub fn init_db(db: &str) -> Result<()> {
     let conn = Connection::open(db)?;
 
     conn.execute(
@@ -57,18 +112,6 @@ fn init_db(db: &str) -> Result<()> {
     Ok(())
 }
 
-// Create a new project and save it
-pub fn create_project(conn: &Connection, name: &str, description: &str) -> Result<()> {
-    let id = Uuid::new_v4();
-    let now = Utc::now().to_string();
-
-    conn.execute(
-        "INSERT INTO project (id, name, description, created_at, updated_at) VALUES (?1, ?2, ?3, ?4, ?5)",
-        params![id.as_bytes(), name, description, now, now],
-    )?;
-
-    Ok(())
-}
 
 // Delete a project, given the project id
 pub fn delete_project_by_id(conn: &Connection, id: Uuid) -> Result<()> {
@@ -113,27 +156,6 @@ pub fn delete_sprint(conn: &Connection, id: Uuid) -> Result<()> {
     Ok(())
 }
 
-// List All projects
-pub fn list_all_projects(conn: &Connection) -> Result<Vec<Project>> {
-    let mut stmt = conn.prepare("SELECT * FROM project")?;
-    let rows = stmt.query_map((), |row| {
-        let id: Vec<u8> = row.get(0)?;
-        Ok(Project {
-            id: Uuid::from_slice(&id).unwrap(),
-            name: row.get(1)?,
-            description: row.get(2)?,
-            created_at: row.get(3)?,
-            updated_at: row.get(4)?,
-        })
-    })?;
-
-    let mut projects = Vec::new();
-    for project in rows {
-        projects.push(project?);
-    }
-
-    Ok(projects)
-}
 
 // List all sprints for a project
 pub fn list_sprints_for_project(conn: &Connection, project_id: Uuid) -> Result<Vec<Sprint>> {

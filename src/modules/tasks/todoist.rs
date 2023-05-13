@@ -3,11 +3,81 @@ use rusqlite::{Connection, params, Result};
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
-struct Task {
-    id: String,
-    content: Option<String>,
+pub struct Task {
+    pub id: String,
+    pub content: Option<String>,
+    pub labels: Vec<String>,
     // add other fields as necessary
 }
+
+fn get_connection(db: &str) -> Connection {
+    match Connection::open(db) {
+        Ok(conn) => conn,
+        Err(e) => {
+            println!("Failed to open database: {}", e);
+            std::process::exit(1);
+        }
+    }
+}
+
+fn get_task_by_id(db: &str, id: String) -> Result<Task> {
+    let conn = get_connection(db);
+
+    let mut stmt = conn.prepare("SELECT * FROM tasks WHERE id = ?")?;
+    let mut task = stmt.query_row(params![id], |row| {
+        Ok(Task {
+            id: row.get(0)?,
+            content: row.get(1)?,
+            labels: vec![],  // We'll get the tags later
+        })
+    })?;
+
+    let mut stmt = conn.prepare("
+        SELECT todoist_labels.label FROM todoist_labels
+        JOIN todoist_task_labels ON todoist_labels.id = todoist_task_labels.label_id
+        WHERE todoist_task_labels.task_id = ?
+    ")?;
+    let labels_iter = stmt.query_map(params![id], |row| row.get(0))?;
+
+    for label_result in labels_iter {
+        task.labels.push(label_result?);
+    }
+
+    Ok(task)
+}
+
+pub fn get_all_tasks(db: &str) -> Result<Vec<Task>> {
+    let conn = get_connection(db);
+
+    let mut stmt = conn.prepare("SELECT * FROM todoist_tasks")?;
+    let mut tasks_iter = stmt.query_map([], |row| {
+        Ok(Task {
+            id: row.get(0)?,
+            content: row.get(1)?,
+            labels: vec![],  // We'll get the tags later
+        })
+    })?;
+
+    let mut tasks = Vec::new();
+    for task_result in tasks_iter {
+        let mut task = task_result?;
+        let mut stmt = conn.prepare("
+            SELECT todoist_labels.label FROM todoist_labels
+            JOIN todoist_task_labels ON todoist_labels.id = todoist_task_labels.todoist_label_id
+            WHERE todoist_task_labels.todoist_task_id = ?
+        ")?;
+        let labels_iter = stmt.query_map(params![task.id], |row| row.get(0))?;
+
+        for label_result in labels_iter {
+            task.labels.push(label_result?);
+        }
+
+        tasks.push(task);
+    }
+
+    Ok(tasks)
+}
+
 
 async fn get_todoist_tasks(todoist_token: &str) -> Result<Vec<Task>, Error> {
     let client = reqwest::Client::new();
@@ -35,29 +105,49 @@ fn sync_to_db(tasks: &Vec<Task>, db: &str) -> rusqlite::Result<()> {
             Ok(_) => {
                 // task exists in the database, update it
                 conn.execute(
-                    "UPDATE tasks SET content = ?1 WHERE id = ?2",
+                    "UPDATE todoist_tasks SET content = ?1 WHERE id = ?2",
                     params![task.content, task.id],
                 )?;
             }
             Err(_) => {
                 // task doesn't exist in the database, insert it
                 conn.execute(
-                    "INSERT INTO tasks (id, content) VALUES (?1, ?2)",
+                    "INSERT INTO todoist_tasks (id, content) VALUES (?1, ?2)",
                     params![task.id, task.content],
                 )?;
             }
         }
+        for label in &task.labels {
+            // Insert tag if it doesn't exist
+            conn.execute(
+                "INSERT OR IGNORE INTO todoist_labels (label) VALUES (?)",
+                [label],
+            )?;
+
+            // Get tag id
+            let label_id: i32 = conn.query_row(
+                "SELECT id FROM todoist_labels WHERE label = ?",
+                [label],
+                |row| row.get(0),
+            )?;
+
+            // Link task and tag
+            conn.execute(
+                "INSERT OR IGNORE INTO todoist_task_labels (todoist_task_id, todoist_label_id) VALUES (?, ?)",
+                [&task.id, &(label_id.to_string())],
+            )?;
+        }
     }
 
     // delete tasks from database that are not in Todoist
-    let db_tasks: Vec<String> = conn.prepare("SELECT id FROM tasks")?
+    let db_tasks: Vec<String> = conn.prepare("SELECT id FROM todoist_tasks")?
         .query_map([], |row| row.get(0))?
         .collect::<Result<_, _>>()?;
 
     for db_task in db_tasks {
         if !tasks.iter().any(|task| task.id == db_task) {
             conn.execute(
-                "DELETE FROM tasks WHERE id = ?1",
+                "DELETE FROM todoist_tasks WHERE id = ?1",
                 params![db_task],
             )?;
         }
@@ -66,13 +156,32 @@ fn sync_to_db(tasks: &Vec<Task>, db: &str) -> rusqlite::Result<()> {
     Ok(())
 }
 
-pub fn init_db(db: &str) -> rusqlite::Result<()> {
+pub fn init_db(db: &str) -> Result<()> {
     let conn = Connection::open(db)?;
 
     conn.execute(
-        "CREATE TABLE IF NOT EXISTS tasks (
-            id TEXT PRIMARY KEY,
+        "CREATE TABLE IF NOT EXISTS todoist_tasks (
+            id VARCHAR PRIMARY KEY,
             content TEXT NOT NULL
+        )",
+        [],
+    )?;
+
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS todoist_labels (
+            id INTEGER PRIMARY KEY,
+            label TEXT NOT NULL UNIQUE
+        )",
+        [],
+    )?;
+
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS todoist_task_labels (
+            todoist_task_id VARCHAR,
+            todoist_label_id INTEGER,
+            PRIMARY KEY (todoist_task_id, todoist_label_id),
+            FOREIGN KEY (todoist_task_id) REFERENCES todoist_tasks (id) ON DELETE CASCADE,
+            FOREIGN KEY (todoist_label_id) REFERENCES todoist_labels (id) ON DELETE CASCADE
         )",
         [],
     )?;

@@ -15,8 +15,14 @@ use crate::modules::notes::markdown::{Page, PageLoader, WikilinkType};
 
 pub fn get_pages(source: PathBuf) -> Vec<Page> {
     let files = markdown::get_markdown_files(source).ok().unwrap();
-    let pathbufs = files.into_iter().map(|p| p.ok().unwrap()).collect::<Vec<PathBuf>>();
-    let pages = pathbufs.into_iter().map(|path| { PageLoader::from_path(&path) }).collect::<Vec<Page>>();
+    let pathbufs = files
+        .into_iter()
+        .map(|p| p.ok().unwrap())
+        .collect::<Vec<PathBuf>>();
+    let pages = pathbufs
+        .into_iter()
+        .map(|path| PageLoader::from_path(&path))
+        .collect::<Vec<Page>>();
     return pages;
 }
 
@@ -39,8 +45,12 @@ pub fn build_backlinks(pages: &[Page]) -> HashMap<String, Vec<(String, usize)>> 
 
             let title = page.title.clone();
 
-            let entry = backlinks.entry(target_title.clone()).or_insert_with(Vec::new);
-            let existing_entry = entry.iter_mut().find(|(ref other_title, _)| **other_title == title);
+            let entry = backlinks
+                .entry(target_title.clone())
+                .or_insert_with(Vec::new);
+            let existing_entry = entry
+                .iter_mut()
+                .find(|(ref other_title, _)| **other_title == title);
 
             if let Some((_, ref mut count)) = existing_entry {
                 *count += 1;
@@ -62,24 +72,44 @@ fn replace_first(input: &str, from: &str, to: &str) -> String {
     [&input[..start_index], to, &input[end_index..]].concat()
 }
 
-fn add_backlinks(page: &mut Page, backlinks: &HashMap<String, Vec<(String, usize)>>) -> Result<(), Box<dyn std::error::Error>> {
+fn add_backlinks(
+    page: &mut Page,
+    backlinks: &HashMap<String, Vec<(String, usize)>>,
+) -> Result<(), Box<dyn std::error::Error>> {
     let empty = "backlinks: []\nbacklinks_count: []\n".to_string();
 
     // Check if this page has any backlinks
     if let Some(links) = backlinks.get(&page.title) {
         // Convert the Vec<(String, usize)> into separate Vec<String> and Vec<usize>
-        let (backlink_titles, backlink_counts): (Vec<String>, Vec<usize>) = links.iter().map(|(title, count)| (title.clone(), *count)).unzip();
+        let (backlink_titles, backlink_counts): (Vec<String>, Vec<usize>) = links
+            .iter()
+            .map(|(title, count)| (title.clone(), *count))
+            .unzip();
 
         // Convert the Vec<String> and Vec<usize> into a single String each, separated by commas
-        let backlink_titles_string = backlink_titles.into_iter().map(|title| format!("\"{}\"", title)).collect::<Vec<String>>().join(", ");
-        let backlink_counts_string = backlink_counts.iter().map(|count| count.to_string()).collect::<Vec<_>>().join(", ");
+        let backlink_titles_string = backlink_titles
+            .into_iter()
+            .map(|title| format!("\"{}\"", title))
+            .collect::<Vec<String>>()
+            .join(", ");
+        let backlink_counts_string = backlink_counts
+            .iter()
+            .map(|count| count.to_string())
+            .collect::<Vec<_>>()
+            .join(", ");
 
         // Find the end of the first "---\n"
         let front_matter_end = page.contents.find("---\n").unwrap() + 4;
 
         // Insert the backlinks and backlinks_count at the beginning of the page content
-        page.contents.insert_str(front_matter_end, &format!("backlinks: [{}]\n", backlink_titles_string));
-        page.contents.insert_str(front_matter_end + backlink_titles_string.len() + 14, &format!("backlinks_count: [{}]\n", backlink_counts_string));
+        page.contents.insert_str(
+            front_matter_end,
+            &format!("backlinks: [{}]\n", backlink_titles_string),
+        );
+        page.contents.insert_str(
+            front_matter_end + backlink_titles_string.len() + 14,
+            &format!("backlinks_count: [{}]\n", backlink_counts_string),
+        );
     } else {
         let contents = replace_first(&page.contents, "---", &format!("---\n{}", empty));
         page.contents = contents;
@@ -134,9 +164,14 @@ fn create_image_map(source_dir: &str) -> Result<HashMap<String, PathBuf>, std::i
     Ok(image_map)
 }
 
-fn copy_images_from_page(page: &Page, image_map: &HashMap<String, PathBuf>, destination: &str) -> std::io::Result<()> {
+fn copy_images_from_page(
+    page: &Page,
+    image_map: &HashMap<String, PathBuf>,
+    destination: &str,
+) -> std::io::Result<()> {
     let image_link_pattern = Regex::new(r"!\[\[(.*?)\]\]").unwrap();
-    let image_links: Vec<String> = image_link_pattern.captures_iter(&page.contents)
+    let image_links: Vec<String> = image_link_pattern
+        .captures_iter(&page.contents)
         .filter_map(|cap| cap.get(1))
         .map(|m| m.as_str().to_string())
         .collect();
@@ -155,7 +190,11 @@ fn copy_images_from_page(page: &Page, image_map: &HashMap<String, PathBuf>, dest
 
 /// Build a site using Humble.
 /// Reads markdown files from `source` and processes them into `destination`.
-pub fn build(source: PathBuf, destination: PathBuf, assets: PathBuf) -> (Vec<Page>, HashMap<String, Vec<(String, usize)>>) {
+pub fn build(
+    source: PathBuf,
+    destination: PathBuf,
+    assets: PathBuf,
+) -> (Vec<Page>, HashMap<String, Vec<(String, usize)>>) {
     let search_markdown_spinner = ProgressBar::new_spinner();
     search_markdown_spinner.set_style(
         ProgressStyle::default_spinner()
@@ -176,10 +215,13 @@ pub fn build(source: PathBuf, destination: PathBuf, assets: PathBuf) -> (Vec<Pag
     );
     filter_publishable_spinner.enable_steady_tick(100);
 
-    let pages = files.into_iter().filter(|page| {
-        let mut lines = page.contents.split("\n");
-        lines.any(|line| line.starts_with("publish: true"))
-    }).collect::<Vec<Page>>();
+    let pages = files
+        .into_iter()
+        .filter(|page| {
+            let mut lines = page.contents.split("\n");
+            lines.any(|line| line.starts_with("publish: true"))
+        })
+        .collect::<Vec<Page>>();
 
     filter_publishable_spinner.finish_with_message("Finished filtering publishable.");
 
@@ -191,17 +233,21 @@ pub fn build(source: PathBuf, destination: PathBuf, assets: PathBuf) -> (Vec<Pag
     );
     backlinks_spinner.enable_steady_tick(100);
 
-
     let backlinks = build_backlinks(&pages);
 
     backlinks_spinner.finish_with_message("Finished searching publishable.");
 
-    let updated_pages = pages.into_iter().map(|mut page| {
-        add_backlinks(&mut page, &backlinks).ok().unwrap();
-        page
-    }).collect::<Vec<Page>>();
+    let updated_pages = pages
+        .into_iter()
+        .map(|mut page| {
+            add_backlinks(&mut page, &backlinks).ok().unwrap();
+            page
+        })
+        .collect::<Vec<Page>>();
 
-    save_pages_to_files(&updated_pages, &destination).ok().unwrap();
+    save_pages_to_files(&updated_pages, &destination)
+        .ok()
+        .unwrap();
 
     let copy_images_spinner = ProgressBar::new_spinner();
     copy_images_spinner.set_style(
@@ -211,14 +257,20 @@ pub fn build(source: PathBuf, destination: PathBuf, assets: PathBuf) -> (Vec<Pag
     );
     copy_images_spinner.enable_steady_tick(100);
 
-    let image_map = create_image_map(source.clone().to_str().unwrap()).ok().unwrap();
+    let image_map = create_image_map(source.clone().to_str().unwrap())
+        .ok()
+        .unwrap();
 
-    let saved_pages = updated_pages.into_iter().map(|page| {
-        copy_images_from_page(&page, &image_map, assets.to_str().unwrap()).ok().unwrap();
-        page
-    }).collect::<Vec<Page>>();
+    let saved_pages = updated_pages
+        .into_iter()
+        .map(|page| {
+            copy_images_from_page(&page, &image_map, assets.to_str().unwrap())
+                .ok()
+                .unwrap();
+            page
+        })
+        .collect::<Vec<Page>>();
 
     copy_images_spinner.finish_with_message("Finished copying images.");
     (saved_pages, backlinks)
 }
-

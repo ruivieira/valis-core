@@ -1,25 +1,23 @@
-use std::{env, fs, io};
+use std::env;
 use std::path::PathBuf;
+use uuid::Uuid;
 
-use rlua::{Context, Lua, Table, ToLua, ToLuaMulti};
 use rlua::Error as LuaError;
+use rlua::Table;
+use rlua::{Context, FromLua, Lua, Result, ToLua, UserData};
 use tokio::runtime::Runtime;
 
 use crate::modules::core;
+use crate::modules::db::serializers::SerializableDateTime;
 use crate::modules::db::DatabaseOperations;
 use crate::modules::formats::text;
 use crate::modules::formats::yaml::{get_yaml_value, update_yaml_value};
 use crate::modules::log::ack;
 use crate::modules::notes::markdown;
 use crate::modules::notes::markdown::Page;
-use crate::modules::projects::{agile, git};
-use crate::modules::projects::agile::Project;
 use crate::modules::projects::git::{GitOperations, SimpleRepo};
+use crate::modules::projects::{agile, git};
 use crate::modules::tasks::todoist;
-
-// pub trait FromLuaTable: Sized {
-//     fn from_lua(lua_table: Table<'_>, ctx: Context<'_>) -> Result<Self, Err>;
-// }
 
 /// Remove she-bang comment lines from a script
 fn remove_comment_lines(s: &str) -> String {
@@ -146,20 +144,28 @@ pub fn prepare_context(ctx: &Context) {
                     table.set("name", wikilink.name).ok().unwrap();
                     table.set("link", wikilink.link).ok().unwrap();
                     table.set("anchor", wikilink.anchor).ok().unwrap();
-                    table.set("link_type", wikilink.link_type as u8).ok().unwrap();
                     table
-                }).collect::<Vec<Table>>();
+                        .set("link_type", wikilink.link_type as u8)
+                        .ok()
+                        .unwrap();
+                    table
+                })
+                .collect::<Vec<Table>>();
             table.set("wikilinks", wikilinks).ok().unwrap();
 
             Ok(table)
-        }).unwrap();
+        })
+        .unwrap();
     globals.set("md_load", md_load).unwrap();
     let todoist_sync = ctx
         .create_function(|_, db: String| {
             match env::var("TODOIST_TOKEN") {
                 Ok(token) => {
                     todoist::init_db(&db);
-                    Runtime::new().unwrap().block_on(todoist::sync(&token, &db)).unwrap();
+                    Runtime::new()
+                        .unwrap()
+                        .block_on(todoist::sync(&token, &db))
+                        .unwrap();
                 }
                 Err(e) => {
                     println!("Failed to read TODOIST_TOKEN: {}", e);
@@ -170,24 +176,89 @@ pub fn prepare_context(ctx: &Context) {
         .unwrap();
     globals.set("todoist_sync", todoist_sync).unwrap();
     let agile_create_project = ctx
-        .create_function(|_, (name, description, path): (String, String, String)| {
-            agile::init_db(&path);
+        .create_function(|ctx, (name, description, path): (String, String, String)| {
+            agile::init_db(&path).ok().unwrap();
             let project = agile::Project {
-                name: name,
-                description: description,
+                name,
+                description,
                 ..Default::default()
             };
-            project.save(&path);
-            Ok(())
+            project.save(&path).ok().unwrap();
+            let project_table = ctx.create_table().ok().unwrap();
+            project_table
+                .set("id", project.id.to_string())
+                .ok()
+                .unwrap();
+            project_table.set("name", project.name).ok().unwrap();
+            project_table
+                .set("description", project.description)
+                .ok()
+                .unwrap();
+            project_table
+                .set("created_at", project.created_at.to_string())
+                .ok()
+                .unwrap();
+            project_table
+                .set("update_at", project.updated_at.to_string())
+                .ok()
+                .unwrap();
+
+            Ok(project_table)
         })
         .unwrap();
-    globals.set("agile_create_project", agile_create_project).unwrap();
+    globals
+        .set("agile_create_project", agile_create_project)
+        .unwrap();
+    let agile_create_sprint = ctx
+        .create_function(
+            |ctx, (project_id, name, start_date, path): (String, String, String, String)| {
+                agile::init_db(&path).ok().unwrap();
+                let sprint = agile::Sprint {
+                    project_id: Uuid::parse_str(&project_id).unwrap(),
+                    name,
+                    start_date: SerializableDateTime::from_str(&start_date).unwrap(),
+                    end_date: SerializableDateTime::from_str(&start_date)
+                        .unwrap()
+                        .add_weeks(3),
+                    ..Default::default()
+                };
+                sprint.save(&path).ok().unwrap();
+                let sprint_table = ctx.create_table().ok().unwrap();
+                sprint_table.set("id", sprint.id.to_string()).ok().unwrap();
+                sprint_table
+                    .set("project_id", sprint.project_id.to_string())
+                    .ok()
+                    .unwrap();
+                sprint_table.set("name", sprint.name).ok().unwrap();
+                sprint_table
+                    .set("start_date", sprint.start_date.to_string())
+                    .ok()
+                    .unwrap();
+                sprint_table
+                    .set("end_date", sprint.end_date.to_string())
+                    .ok()
+                    .unwrap();
+                sprint_table
+                    .set("created_at", sprint.created_at.to_string())
+                    .ok()
+                    .unwrap();
+                sprint_table
+                    .set("update_at", sprint.updated_at.to_string())
+                    .ok()
+                    .unwrap();
+                Ok(sprint_table)
+            },
+        )
+        .unwrap();
+    globals
+        .set("agile_create_sprint", agile_create_sprint)
+        .unwrap();
 }
 
 /// Execute a script.
 /// # Arguments
 /// * `script` - The script to execute, as a `str`.
-pub fn execute(script: &str) -> Result<(), rlua::Error> {
+pub fn execute(script: &str) -> Result<()> {
     let lua = Lua::new();
 
     lua.context(|lua_ctx| {

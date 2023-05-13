@@ -3,7 +3,7 @@ use std::io::BufReader;
 use std::path::PathBuf;
 
 use kdbx_rs;
-use kdbx_rs::{CompositeKey, Database};
+use kdbx_rs::CompositeKey;
 
 #[derive(Clone)]
 pub struct Secret {

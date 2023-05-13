@@ -16,8 +16,13 @@ use crate::modules::notes::markdown::WikilinkType::TEXT;
 lazy_static! {
     static ref WIKILINK_REGEX: Regex = Regex::new(r"(!)?\[\[(.*?)\]\]").unwrap();
     static ref MEDIA_REGEX: Regex = Regex::new(r"!\[(.*)?\]\((.*)\)").unwrap();
-    static ref IMAGE_EXTENSIONS: Vec<String> = vec!["jpg".to_string(),
-        "png".to_string(), "svg".to_string(), "jpeg".to_string(), "gif".to_string()];
+    static ref IMAGE_EXTENSIONS: Vec<String> = vec![
+        "jpg".to_string(),
+        "png".to_string(),
+        "svg".to_string(),
+        "jpeg".to_string(),
+        "gif".to_string()
+    ];
 }
 
 #[derive(Debug)]
@@ -50,7 +55,10 @@ fn convert_wikilinks_to_hugo(contents: &str) -> String {
 
         // Check if the matched link is an image
         if is_image {
-            format!("{{{{< figure src=\"/assets/{}\" alt=\"{}\" >}}}}", link_and_name, link_and_name)
+            format!(
+                "{{{{< figure src=\"/assets/{}\" alt=\"{}\" >}}}}",
+                link_and_name, link_and_name
+            )
         }
         // Check if the matched link contains a '|'
         else if let Some(pipe_index) = link_and_name.find('|') {
@@ -85,7 +93,6 @@ impl Page {
     }
 }
 
-
 pub trait PageLoader {
     fn from_path(path: &PathBuf) -> Self;
     fn title_from_path(path: &PathBuf) -> String;
@@ -111,9 +118,7 @@ impl PageLoader for Page {
     }
 }
 
-#[derive(Debug)]
-#[derive(PartialEq)]
-#[derive(Copy, Clone)]
+#[derive(Debug, PartialEq, Copy, Clone)]
 pub enum WikilinkType {
     IMAGE,
     TEXT,
@@ -145,7 +150,8 @@ pub fn get_markdown_files<'a>(root: PathBuf) -> Result<Matcher<'a, PathBuf>, Str
 }
 
 pub fn extract_links(contents: &str) -> Vec<WikiLink> {
-    return WIKILINK_REGEX.captures_iter(contents)
+    return WIKILINK_REGEX
+        .captures_iter(contents)
         .map(|captures| parse_wikilink(captures.get(2).unwrap().as_str()))
         .filter(|wikilink| wikilink.as_ref().ok().is_some())
         .map(|wikilink| wikilink.unwrap())
@@ -156,9 +162,7 @@ impl FromStr for WikiLink {
     type Err = Box<dyn Error>;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let link_contents = s
-            .trim_start_matches("[[")
-            .trim_end_matches("]]");
+        let link_contents = s.trim_start_matches("[[").trim_end_matches("]]");
 
         let (link, name) = if let Some(pipe_pos) = link_contents.find('|') {
             let (link, name) = link_contents.split_at(pipe_pos);
@@ -175,9 +179,21 @@ impl FromStr for WikiLink {
         };
 
         let is_just_anchor = link.starts_with('#');
-        let final_link = if is_just_anchor { "" } else { link_without_anchor };
-        let final_anchor = if is_just_anchor { link_contents.trim_start_matches('#') } else { anchor };
-        let final_name = if name == link { final_link.to_string() } else { name.to_string() };
+        let final_link = if is_just_anchor {
+            ""
+        } else {
+            link_without_anchor
+        };
+        let final_anchor = if is_just_anchor {
+            link_contents.trim_start_matches('#')
+        } else {
+            anchor
+        };
+        let final_name = if name == link {
+            final_link.to_string()
+        } else {
+            name.to_string()
+        };
 
         let link_type = filename_type(final_link);
 

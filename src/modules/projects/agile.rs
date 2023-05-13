@@ -1,8 +1,8 @@
 use std::fmt::Error;
 
 use chrono::{DateTime, Utc};
-use rusqlite::{Connection, params, Result};
-use serde::{Deserialize, Serialize, Serializer};
+use rusqlite::{params, Connection, Result};
+use serde::{Deserialize, Serialize};
 
 use uuid::Uuid;
 
@@ -37,16 +37,19 @@ impl db::DatabaseOperations<String> for Project {
     fn get_all(&self, db: &str) -> Result<Vec<Project>, Error> {
         let conn = Connection::open(db).ok().unwrap();
         let mut stmt = conn.prepare("SELECT * FROM project").ok().unwrap();
-        let rows = stmt.query_map((), |row| {
-            let id: Vec<u8> = row.get(0).ok().unwrap();
-            Ok(Project {
-                id: Uuid::from_slice(&id).unwrap(),
-                name: row.get(1).ok().unwrap(),
-                description: row.get(2).ok().unwrap(),
-                created_at: row.get(3).ok().unwrap(),
-                updated_at: row.get(4).ok().unwrap(),
+        let rows = stmt
+            .query_map((), |row| {
+                let id: Vec<u8> = row.get(0).ok().unwrap();
+                Ok(Project {
+                    id: Uuid::from_slice(&id).unwrap(),
+                    name: row.get(1).ok().unwrap(),
+                    description: row.get(2).ok().unwrap(),
+                    created_at: row.get(3).ok().unwrap(),
+                    updated_at: row.get(4).ok().unwrap(),
+                })
             })
-        }).ok().unwrap();
+            .ok()
+            .unwrap();
 
         let mut projects = Vec::new();
         for project in rows {
@@ -81,6 +84,41 @@ pub struct Sprint {
     pub updated_at: serializers::SerializableDateTime,
 }
 
+impl db::DatabaseOperations<String> for Sprint {
+    /// Save a Sprint
+    fn save(&self, db: &str) -> Result<(), Error> {
+        let conn = Connection::open(db).ok().unwrap();
+
+        let id = Uuid::new_v4();
+        let now = Utc::now().to_string();
+
+        conn.execute(
+            "INSERT INTO sprint (id, project_id, name, start_date, end_date, created_at, updated_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+            params![id.as_bytes(), &self.project_id.as_bytes(), &self.name, &self.start_date.to_string(), &self.end_date.to_string(), now, now],
+        ).ok().unwrap();
+
+        Ok(())
+    }
+    fn get_all(&self, db: &str) -> Result<Vec<Sprint>, Error> {
+        todo!()
+    }
+}
+
+impl Default for Sprint {
+    fn default() -> Self {
+        let now = SerializableDateTime::now();
+        Self {
+            id: Uuid::new_v4(),
+            project_id: Uuid::new_v4(),
+            name: "Default name".to_string(),
+            start_date: now.clone(),
+            end_date: now.add_weeks(3),
+            created_at: now.clone(),
+            updated_at: now.clone(),
+        }
+    }
+}
+
 pub fn init_db(db: &str) -> Result<()> {
     let conn = Connection::open(db)?;
 
@@ -112,29 +150,28 @@ pub fn init_db(db: &str) -> Result<()> {
     Ok(())
 }
 
-
 // Delete a project, given the project id
 pub fn delete_project_by_id(conn: &Connection, id: Uuid) -> Result<()> {
-    conn.execute(
-        "DELETE FROM project WHERE id = ?1",
-        params![id.as_bytes()],
-    )?;
+    conn.execute("DELETE FROM project WHERE id = ?1", params![id.as_bytes()])?;
 
     Ok(())
 }
 
 // Delete a project, given the project name
 pub fn delete_project_by_name(conn: &Connection, name: &str) -> Result<()> {
-    conn.execute(
-        "DELETE FROM project WHERE name = ?1",
-        params![name],
-    )?;
+    conn.execute("DELETE FROM project WHERE name = ?1", params![name])?;
 
     Ok(())
 }
 
 // Create a Sprint
-pub fn create_sprint(conn: &Connection, project_id: Uuid, name: &str, start_date: DateTime<Utc>, end_date: DateTime<Utc>) -> Result<()> {
+pub fn create_sprint(
+    conn: &Connection,
+    project_id: Uuid,
+    name: &str,
+    start_date: DateTime<Utc>,
+    end_date: DateTime<Utc>,
+) -> Result<()> {
     let id = Uuid::new_v4();
     let now = Utc::now().to_string();
 
@@ -148,14 +185,10 @@ pub fn create_sprint(conn: &Connection, project_id: Uuid, name: &str, start_date
 
 // Delete a Sprint
 pub fn delete_sprint(conn: &Connection, id: Uuid) -> Result<()> {
-    conn.execute(
-        "DELETE FROM sprint WHERE id = ?1",
-        params![id.as_bytes()],
-    )?;
+    conn.execute("DELETE FROM sprint WHERE id = ?1", params![id.as_bytes()])?;
 
     Ok(())
 }
-
 
 // List all sprints for a project
 pub fn list_sprints_for_project(conn: &Connection, project_id: Uuid) -> Result<Vec<Sprint>> {
@@ -171,10 +204,18 @@ pub fn list_sprints_for_project(conn: &Connection, project_id: Uuid) -> Result<V
             id: Uuid::from_slice(&id).unwrap(),
             project_id: Uuid::from_slice(&project_id).unwrap(),
             name: row.get(2)?,
-            start_date: serializers::SerializableDateTime::parse_from_rfc3339(&start_date).unwrap().with_timezone(&Utc),
-            end_date: serializers::SerializableDateTime::parse_from_rfc3339(&end_date).unwrap().with_timezone(&Utc),
-            created_at: serializers::SerializableDateTime::parse_from_rfc3339(&created_at).unwrap().with_timezone(&Utc),
-            updated_at: serializers::SerializableDateTime::parse_from_rfc3339(&updated_at).unwrap().with_timezone(&Utc),
+            start_date: serializers::SerializableDateTime::parse_from_rfc3339(&start_date)
+                .unwrap()
+                .with_timezone(&Utc),
+            end_date: serializers::SerializableDateTime::parse_from_rfc3339(&end_date)
+                .unwrap()
+                .with_timezone(&Utc),
+            created_at: serializers::SerializableDateTime::parse_from_rfc3339(&created_at)
+                .unwrap()
+                .with_timezone(&Utc),
+            updated_at: serializers::SerializableDateTime::parse_from_rfc3339(&updated_at)
+                .unwrap()
+                .with_timezone(&Utc),
         })
     })?;
 
@@ -200,10 +241,18 @@ pub fn list_all_sprints(conn: &Connection) -> Result<Vec<Sprint>> {
             id: Uuid::from_slice(&id).unwrap(),
             project_id: Uuid::from_slice(&project_id).unwrap(),
             name: row.get(2)?,
-            start_date: serializers::SerializableDateTime::parse_from_rfc3339(&start_date).unwrap().with_timezone(&Utc),
-            end_date: serializers::SerializableDateTime::parse_from_rfc3339(&end_date).unwrap().with_timezone(&Utc),
-            created_at: serializers::SerializableDateTime::parse_from_rfc3339(&created_at).unwrap().with_timezone(&Utc),
-            updated_at: serializers::SerializableDateTime::parse_from_rfc3339(&updated_at).unwrap().with_timezone(&Utc),
+            start_date: serializers::SerializableDateTime::parse_from_rfc3339(&start_date)
+                .unwrap()
+                .with_timezone(&Utc),
+            end_date: serializers::SerializableDateTime::parse_from_rfc3339(&end_date)
+                .unwrap()
+                .with_timezone(&Utc),
+            created_at: serializers::SerializableDateTime::parse_from_rfc3339(&created_at)
+                .unwrap()
+                .with_timezone(&Utc),
+            updated_at: serializers::SerializableDateTime::parse_from_rfc3339(&updated_at)
+                .unwrap()
+                .with_timezone(&Utc),
         })
     })?;
 

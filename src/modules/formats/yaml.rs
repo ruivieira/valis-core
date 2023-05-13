@@ -1,11 +1,7 @@
-use std::collections::HashMap;
 use std::error::Error;
-use std::fs;
 use std::fs::{File, OpenOptions};
 use std::io::{Read, Write};
-use std::path::Path;
 
-use rlua::Value as LuaValue;
 use rlua::{Context, Lua};
 use serde::{Deserialize, Serialize};
 use serde_yaml::Mapping;

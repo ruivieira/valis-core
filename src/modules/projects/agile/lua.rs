@@ -8,7 +8,7 @@ use crate::modules::db;
 use crate::modules::db::DatabaseOperations;
 use crate::modules::db::serializers::SerializableDateTime;
 use crate::modules::projects::agile;
-use crate::modules::projects::agile::core::Project;
+use crate::modules::projects::agile::core::{print_sprint_info, Project};
 
 pub fn agile_create_project(ctx: &Context) {
     let f = ctx
@@ -52,7 +52,9 @@ pub fn agile_create_sprint(ctx: &Context) {
         .create_function(
             |ctx, (project_id, name, start_date, path): (String, String, String, String)| {
                 db::init_db(&path).ok().unwrap();
+                let id = Uuid::new_v4();
                 let sprint = agile::core::Sprint {
+                    id,
                     project_id: Uuid::parse_str(&project_id).unwrap(),
                     name,
                     start_date: SerializableDateTime::from_str(&start_date).unwrap(),
@@ -63,7 +65,7 @@ pub fn agile_create_sprint(ctx: &Context) {
                 };
                 sprint.save(&path).ok().unwrap();
                 let sprint_table = ctx.create_table().ok().unwrap();
-                sprint_table.set("id", sprint.id.to_string()).ok().unwrap();
+                sprint_table.set("id", id.to_string()).ok().unwrap();
                 sprint_table
                     .set("project_id", sprint.project_id.to_string())
                     .ok()
@@ -91,5 +93,21 @@ pub fn agile_create_sprint(ctx: &Context) {
         .unwrap();
     ctx.globals()
         .set("agile_create_sprint", f)
+        .unwrap();
+}
+
+pub fn agile_show_sprint(ctx: &Context) {
+    let f = ctx
+        .create_function(
+            |ctx, (id, path): (String, String)| {
+                db::init_db(&path).ok().unwrap();
+                let id = Uuid::parse_str(&id).ok().unwrap();
+                let _ = print_sprint_info(&path, id);
+                Ok(())
+            },
+        )
+        .unwrap();
+    ctx.globals()
+        .set("agile_show_sprint", f)
         .unwrap();
 }

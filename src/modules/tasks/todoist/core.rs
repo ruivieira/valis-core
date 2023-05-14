@@ -1,7 +1,7 @@
 use std::error::Error;
 use std::result::Result;
 
-use rusqlite::{Connection, params};
+use rusqlite::{Connection, params, Row};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -35,7 +35,12 @@ impl DatabaseOperations<String> for Task {
     fn save(&self, db: &str) -> Result<(), std::fmt::Error> {
         todo!()
     }
-    fn get_all(db: &str) -> Result<Vec<Task>, std::fmt::Error> {
+
+    fn get(id: String, db: &str) -> Result<Self, rusqlite::Error> where Self: Sized {
+        todo!()
+    }
+
+    fn get_all(db: &str) -> Result<Vec<Task>, rusqlite::Error> {
         let conn = get_connection(db);
 
         let mut stmt = conn.prepare("SELECT * FROM todoist_tasks").ok().unwrap();
@@ -76,6 +81,10 @@ impl DatabaseOperations<String> for Task {
         }
 
         Ok(tasks)
+    }
+
+    fn map(row: &Row<'_>) -> Result<Self, rusqlite::Error> where Self: Sized {
+        todo!()
     }
 }
 

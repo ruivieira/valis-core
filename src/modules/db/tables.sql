@@ -37,7 +37,7 @@ CREATE TABLE IF NOT EXISTS project
 ---
 CREATE TABLE IF NOT EXISTS sprint
 (
-    id         BLOB PRIMARY KEY,
+    id         TEXT PRIMARY KEY,
     project_id BLOB NOT NULL,
     name       TEXT NOT NULL,
     start_date TEXT NOT NULL,

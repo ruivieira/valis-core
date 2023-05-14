@@ -1,15 +1,16 @@
 use std::fmt::Error;
 
-use rusqlite::Connection;
+use rusqlite::{Connection, Row};
 
 pub mod serializers;
 
 pub trait DatabaseOperations<T> {
     fn save(&self, db: &str) -> Result<(), Error>;
-    // fn get(&self, id: T, db: &str) -> Self where Self: Sized;
-    fn get_all(db: &str) -> Result<Vec<Self>, Error>
+    fn get(id: T, db: &str) -> Result<Self, rusqlite::Error> where Self: Sized;
+    fn get_all(db: &str) -> Result<Vec<Self>, rusqlite::Error>
         where
             Self: Sized;
+    fn map(row: &Row<'_>) -> Result<Self, rusqlite::Error> where Self: Sized;
 }
 
 fn get_sql_schema() -> Vec<String> {

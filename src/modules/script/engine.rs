@@ -188,7 +188,8 @@ pub fn prepare_context(ctx: &Context) {
     todoist::lua::todoist_sync(ctx);
     todoist::lua::todoist_add_task_to_sprint(ctx);
     agile::lua::agile_create_project(ctx);
-    agile::lua::agile_create_sprint(ctx)
+    agile::lua::agile_create_sprint(ctx);
+    agile::lua::agile_show_sprint(ctx);
 }
 
 /// Execute a script.

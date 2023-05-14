@@ -27,7 +27,7 @@ pub struct SprintTask {
 
 impl Task {
     pub fn add_to_sprint(&self, db: &str, sprint: Sprint) -> Result<(), rusqlite::Error> {
-        add_task_to_sprint(db, sprint.id, self.id.to_string())
+        add_task_to_sprint(db, &sprint.id, self.id.to_string())
     }
 }
 
@@ -235,10 +235,10 @@ fn sync_to_db(tasks: &Vec<Task>, db: &str) -> rusqlite::Result<()> {
     Ok(())
 }
 
-pub fn add_task_to_sprint(db: &str, sprint_id: Uuid, task_id: String) -> Result<(), rusqlite::Error> {
+pub fn add_task_to_sprint(db: &str, sprint_id: &Uuid, task_id: String) -> Result<(), rusqlite::Error> {
     let conn = get_connection(db);
     conn.execute(
-        "INSERT INTO sprint_task (sprint_id, task_id) VALUES (?1, ?2)",
+        "INSERT INTO sprint_todoist_task (sprint_id, todoist_task_id) VALUES (?1, ?2)",
         [&sprint_id.to_string(), &task_id],
     )?;
 

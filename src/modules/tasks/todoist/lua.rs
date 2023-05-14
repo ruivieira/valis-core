@@ -34,9 +34,10 @@ pub fn todoist_sync(ctx: &Context) {
 pub fn todoist_add_task_to_sprint(ctx: &Context) {
     let f = ctx
         .create_function(|_, (sprint_id, task_id, db): (String, String, String)| {
-            match Uuid::from_str(&sprint_id) {
+            match Uuid::parse_str(&sprint_id) {
                 Ok(sprint_uuid) => {
-                    match add_task_to_sprint(&db, Uuid::from_str(&sprint_id).ok().unwrap(), task_id) {
+                    println!("Sprint id: {}", sprint_id);
+                    match add_task_to_sprint(&db, &sprint_uuid, task_id) {
                         Ok(()) => Ok(()),
                         Err(e) => Err(Error::RuntimeError("Could not save task to Sprint".to_string()))
                     }

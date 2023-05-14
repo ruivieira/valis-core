@@ -1,10 +1,11 @@
 use std::env;
 use std::path::PathBuf;
 
-use rlua::{Context, Lua, Result, ToLua, UserData};
+use rlua::{Context, Lua, Result, ToLua, UserData, Value};
 use rlua::Error as LuaError;
 use rlua::FromLua;
 use rlua::Table;
+use termion::color;
 use tokio::runtime::Runtime;
 use uuid::Uuid;
 
@@ -26,6 +27,33 @@ fn remove_comment_lines(s: &str) -> String {
         .filter(|line| !line.trim().starts_with("#"))
         .collect::<Vec<&str>>()
         .join("\n")
+}
+
+fn pretty_print_table(table: &Table, indent: usize) -> Result<()> {
+    let pairs = table.clone().pairs::<Value, Value>();
+    for pair in pairs {
+        let (key, value) = pair?;
+        print!("{}{}", " ".repeat(indent), color::Fg(color::Cyan)); // keys in cyan
+        match key {
+            Value::String(s) => print!("{}", s.to_str()?),
+            Value::Integer(i) => print!("{}", i),
+            Value::Number(n) => print!("{}", n),
+            _ => print!("(non-string/number key)"),
+        }
+        print!(": {}", color::Fg(color::Reset));
+        match value {
+            Value::Table(t) => {
+                println!();
+                pretty_print_table(&t, indent + 2)?; // recursive call for nested tables
+            }
+            Value::String(s) => println!("{}{}", color::Fg(color::White), s.to_str()?), // strings in white
+            Value::Integer(i) => println!("{}{}", color::Fg(color::Magenta), i), // integers in magenta
+            Value::Number(n) => println!("{}{}", color::Fg(color::Magenta), n), // numbers in magenta
+            _ => println!("(non-table/string/number value)"),
+        }
+        print!("{}", color::Fg(color::Reset));
+    }
+    Ok(())
 }
 
 /// Add built-in functions to the Lua `context`.
@@ -151,6 +179,12 @@ pub fn prepare_context(ctx: &Context) {
         })
         .unwrap();
     globals.set("md_load", md_load).unwrap();
+    let pprint = ctx
+        .create_function(|_, table: Table| {
+            pretty_print_table(&table, 2)
+        })
+        .unwrap();
+    globals.set("pprint", pprint).unwrap();
     todoist::lua::todoist_sync(ctx);
     todoist::lua::todoist_add_task_to_sprint(ctx);
     agile::lua::agile_create_project(ctx);

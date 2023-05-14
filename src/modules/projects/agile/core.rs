@@ -16,8 +16,8 @@ pub struct Project {
     pub id: Uuid,
     pub name: String,
     pub description: String,
-    pub created_at: serializers::SerializableDateTime,
-    pub updated_at: serializers::SerializableDateTime,
+    pub created_at: SerializableDateTime,
+    pub updated_at: SerializableDateTime,
 }
 
 impl DatabaseOperations<String> for Project {

@@ -1,19 +1,26 @@
 use std::result::Result;
 
 use reqwest::Error;
-use rusqlite::{params, Connection};
-use serde::Deserialize;
+use rusqlite::{Connection, params};
+use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 use db::DatabaseOperations;
 
 use crate::modules::db;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct Task {
     pub id: String,
     pub content: Option<String>,
     pub labels: Vec<String>,
     // add other fields as necessary
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SprintTask {
+    pub sprint_id: Uuid,
+    pub todoist_task_id: String,
 }
 
 impl DatabaseOperations<String> for Task {
@@ -226,39 +233,6 @@ fn sync_to_db(tasks: &Vec<Task>, db: &str) -> rusqlite::Result<()> {
             conn.execute("DELETE FROM todoist_tasks WHERE id = ?1", params![db_task])?;
         }
     }
-
-    Ok(())
-}
-
-pub fn init_db(db: &str) -> Result<(), rusqlite::Error> {
-    let conn = Connection::open(db)?;
-
-    conn.execute(
-        "CREATE TABLE IF NOT EXISTS todoist_tasks (
-            id VARCHAR PRIMARY KEY,
-            content TEXT NOT NULL
-        )",
-        [],
-    )?;
-
-    conn.execute(
-        "CREATE TABLE IF NOT EXISTS todoist_labels (
-            id INTEGER PRIMARY KEY,
-            label TEXT NOT NULL UNIQUE
-        )",
-        [],
-    )?;
-
-    conn.execute(
-        "CREATE TABLE IF NOT EXISTS todoist_task_labels (
-            todoist_task_id VARCHAR,
-            todoist_label_id INTEGER,
-            PRIMARY KEY (todoist_task_id, todoist_label_id),
-            FOREIGN KEY (todoist_task_id) REFERENCES todoist_tasks (id) ON DELETE CASCADE,
-            FOREIGN KEY (todoist_label_id) REFERENCES todoist_labels (id) ON DELETE CASCADE
-        )",
-        [],
-    )?;
 
     Ok(())
 }

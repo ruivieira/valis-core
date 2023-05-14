@@ -169,37 +169,6 @@ impl Sprint {
     }
 }
 
-pub fn init_db(db: &str) -> Result<()> {
-    let conn = Connection::open(db)?;
-
-    conn.execute(
-        "CREATE TABLE IF NOT EXISTS project (
-             id BLOB PRIMARY KEY,
-             name TEXT NOT NULL,
-             description TEXT NOT NULL,
-             created_at TEXT NOT NULL,
-             updated_at TEXT NOT NULL
-         )",
-        params![],
-    )?;
-
-    conn.execute(
-        "CREATE TABLE IF NOT EXISTS sprint (
-             id BLOB PRIMARY KEY,
-             project_id BLOB NOT NULL,
-             name TEXT NOT NULL,
-             start_date TEXT NOT NULL,
-             end_date TEXT NOT NULL,
-             created_at TEXT NOT NULL,
-             updated_at TEXT NOT NULL,
-             FOREIGN KEY(project_id) REFERENCES project(id)
-         )",
-        params![],
-    )?;
-
-    Ok(())
-}
-
 // Delete a project, given the project id
 pub fn delete_project_by_id(conn: &Connection, id: Uuid) -> Result<()> {
     conn.execute("DELETE FROM project WHERE id = ?1", params![id.as_bytes()])?;

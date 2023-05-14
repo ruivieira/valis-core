@@ -1,23 +1,23 @@
 use std::env;
 use std::path::PathBuf;
-use uuid::Uuid;
 
+use rlua::{Context, Lua, Result, ToLua, UserData};
 use rlua::Error as LuaError;
 use rlua::FromLua;
 use rlua::Table;
-use rlua::{Context, Lua, Result, ToLua, UserData};
 use tokio::runtime::Runtime;
+use uuid::Uuid;
 
-use crate::modules::core;
-use crate::modules::db::serializers::SerializableDateTime;
+use crate::modules::{core, db};
 use crate::modules::db::DatabaseOperations;
+use crate::modules::db::serializers::SerializableDateTime;
 use crate::modules::formats::text;
 use crate::modules::formats::yaml::{get_yaml_value, update_yaml_value};
 use crate::modules::log::ack;
 use crate::modules::notes::markdown;
 use crate::modules::notes::markdown::Page;
-use crate::modules::projects::git::{GitOperations, SimpleRepo};
 use crate::modules::projects::{agile, git};
+use crate::modules::projects::git::{GitOperations, SimpleRepo};
 use crate::modules::tasks::todoist;
 
 /// Remove she-bang comment lines from a script
@@ -155,7 +155,7 @@ pub fn prepare_context(ctx: &Context) {
         .create_function(|_, db: String| {
             match env::var("TODOIST_TOKEN") {
                 Ok(token) => {
-                    todoist::init_db(&db);
+                    db::init_db(&db);
                     Runtime::new()
                         .unwrap()
                         .block_on(todoist::sync(&token, &db))
@@ -171,7 +171,7 @@ pub fn prepare_context(ctx: &Context) {
     globals.set("todoist_sync", todoist_sync).unwrap();
     let agile_create_project = ctx
         .create_function(|ctx, (name, description, path): (String, String, String)| {
-            agile::init_db(&path).ok().unwrap();
+            db::init_db(&path).ok().unwrap();
             let project = agile::Project {
                 name,
                 description,
@@ -206,7 +206,7 @@ pub fn prepare_context(ctx: &Context) {
     let agile_create_sprint = ctx
         .create_function(
             |ctx, (project_id, name, start_date, path): (String, String, String, String)| {
-                agile::init_db(&path).ok().unwrap();
+                db::init_db(&path).ok().unwrap();
                 let sprint = agile::Sprint {
                     project_id: Uuid::parse_str(&project_id).unwrap(),
                     name,

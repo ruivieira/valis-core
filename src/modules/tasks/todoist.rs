@@ -20,7 +20,7 @@ impl DatabaseOperations<String> for Task {
     fn save(&self, db: &str) -> Result<(), std::fmt::Error> {
         todo!()
     }
-    fn get_all(&self, db: &str) -> Result<Vec<Task>, std::fmt::Error> {
+    fn get_all(db: &str) -> Result<Vec<Task>, std::fmt::Error> {
         let conn = get_connection(db);
 
         let mut stmt = conn.prepare("SELECT * FROM todoist_tasks").ok().unwrap();

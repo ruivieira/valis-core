@@ -77,4 +77,7 @@ impl SerializableDateTime {
         let datetime = DateTime::from_utc(naive_date.and_hms(0, 0, 0), Utc);
         Ok(SerializableDateTime(datetime))
     }
+    pub fn get_utc(&self) -> DateTime<Utc> {
+        self.0
+    }
 }

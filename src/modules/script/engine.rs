@@ -3,8 +3,9 @@ use std::path::PathBuf;
 use uuid::Uuid;
 
 use rlua::Error as LuaError;
+use rlua::FromLua;
 use rlua::Table;
-use rlua::{Context, FromLua, Lua, Result, ToLua, UserData};
+use rlua::{Context, Lua, Result, ToLua, UserData};
 use tokio::runtime::Runtime;
 
 use crate::modules::core;
@@ -33,13 +34,6 @@ fn remove_comment_lines(s: &str) -> String {
 /// * `ctx` - The Lua context
 pub fn prepare_context(ctx: &Context) {
     let globals = ctx.globals();
-    globals.set("foo", 42).unwrap();
-    let check_print = ctx
-        .create_function(|_, message: String| {
-            return Ok(format!("hello from rust! -> {}", &message));
-        })
-        .unwrap();
-    globals.set("check_print", check_print).unwrap();
     let git_clone = ctx
         .create_function(|_, (url, destination): (String, String)| {
             let repo = SimpleRepo {

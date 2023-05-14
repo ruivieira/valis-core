@@ -17,7 +17,6 @@ use crate::modules::log::ack;
 use crate::modules::notes::markdown;
 use crate::modules::notes::markdown::Page;
 use crate::modules::projects::{agile, git};
-use crate::modules::projects::agile::lua;
 use crate::modules::projects::git::{GitOperations, SimpleRepo};
 use crate::modules::tasks::todoist;
 
@@ -152,26 +151,9 @@ pub fn prepare_context(ctx: &Context) {
         })
         .unwrap();
     globals.set("md_load", md_load).unwrap();
-    let todoist_sync = ctx
-        .create_function(|_, db: String| {
-            match env::var("TODOIST_TOKEN") {
-                Ok(token) => {
-                    db::init_db(&db);
-                    Runtime::new()
-                        .unwrap()
-                        .block_on(todoist::sync(&token, &db))
-                        .unwrap();
-                }
-                Err(e) => {
-                    println!("Failed to read TODOIST_TOKEN: {}", e);
-                }
-            }
-            Ok(())
-        })
-        .unwrap();
-    globals.set("todoist_sync", todoist_sync).unwrap();
-    lua::agile_create_project(ctx);
-    lua::agile_create_sprint(ctx)
+    todoist::lua::todoist_sync(ctx);
+    agile::lua::agile_create_project(ctx);
+    agile::lua::agile_create_sprint(ctx)
 }
 
 /// Execute a script.

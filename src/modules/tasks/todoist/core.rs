@@ -1,6 +1,6 @@
+use std::error::Error;
 use std::result::Result;
 
-use reqwest::Error;
 use rusqlite::{Connection, params};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -8,6 +8,8 @@ use uuid::Uuid;
 use db::DatabaseOperations;
 
 use crate::modules::db;
+use crate::modules::db::get_connection;
+use crate::modules::projects::agile::core::Sprint;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Task {
@@ -21,6 +23,12 @@ pub struct Task {
 pub struct SprintTask {
     pub sprint_id: Uuid,
     pub todoist_task_id: String,
+}
+
+impl Task {
+    pub fn add_to_sprint(&self, db: &str, sprint: Sprint) -> Result<(), rusqlite::Error> {
+        add_task_to_sprint(db, sprint.id, self.id.to_string())
+    }
 }
 
 impl DatabaseOperations<String> for Task {
@@ -71,16 +79,6 @@ impl DatabaseOperations<String> for Task {
     }
 }
 
-fn get_connection(db: &str) -> Connection {
-    match Connection::open(db) {
-        Ok(conn) => conn,
-        Err(e) => {
-            println!("Failed to open database: {}", e);
-            std::process::exit(1);
-        }
-    }
-}
-
 fn get_task_by_id(db: &str, id: String) -> Result<Task, std::fmt::Error> {
     let conn = get_connection(db);
 
@@ -118,7 +116,7 @@ fn get_task_by_id(db: &str, id: String) -> Result<Task, std::fmt::Error> {
     Ok(task)
 }
 
-pub fn get_all_tasks(db: &str) -> Result<Vec<Task>, Error> {
+pub fn get_all_tasks(db: &str) -> Result<Vec<Task>, rusqlite::Error> {
     let conn = get_connection(db);
 
     let mut stmt = conn.prepare("SELECT * FROM todoist_tasks").ok().unwrap();
@@ -161,7 +159,7 @@ pub fn get_all_tasks(db: &str) -> Result<Vec<Task>, Error> {
     Ok(tasks)
 }
 
-async fn get_todoist_tasks(todoist_token: &str) -> Result<Vec<Task>, Error> {
+async fn get_todoist_tasks(todoist_token: &str) -> Result<Vec<Task>, reqwest::Error> {
     let client = reqwest::Client::new();
     let response = client
         .get("https://api.todoist.com/rest/v2/tasks")
@@ -237,9 +235,19 @@ fn sync_to_db(tasks: &Vec<Task>, db: &str) -> rusqlite::Result<()> {
     Ok(())
 }
 
-pub async fn sync(token: &str, db: &str) -> Result<(), Box<dyn std::error::Error>> {
-    let tasks = get_todoist_tasks(token).await?;
-    sync_to_db(&tasks, db)?;
+pub fn add_task_to_sprint(db: &str, sprint_id: Uuid, task_id: String) -> Result<(), rusqlite::Error> {
+    let conn = get_connection(db);
+    conn.execute(
+        "INSERT INTO sprint_task (sprint_id, task_id) VALUES (?1, ?2)",
+        [&sprint_id.to_string(), &task_id],
+    )?;
+
+    Ok(())
+}
+
+pub async fn sync(token: &str, db: &str) -> Result<(), std::fmt::Error> {
+    let tasks = get_todoist_tasks(token).await.ok().unwrap();
+    sync_to_db(&tasks, db).ok().unwrap();
 
     Ok(())
 }

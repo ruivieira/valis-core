@@ -25,3 +25,13 @@ pub fn init_db(db: &str) -> Result<(), rusqlite::Error> {
 
     Ok(())
 }
+
+pub fn get_connection(db: &str) -> Connection {
+    match Connection::open(db) {
+        Ok(conn) => conn,
+        Err(e) => {
+            println!("Failed to open database: {}", e);
+            std::process::exit(1);
+        }
+    }
+}

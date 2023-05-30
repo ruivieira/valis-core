@@ -149,9 +149,16 @@ pub fn get_markdown_files<'a>(root: PathBuf) -> Result<Matcher<'a, PathBuf>, Str
     return get_files(root, &"**/*.md");
 }
 
+pub fn remove_code_blocks(s: &str) -> String {
+// Matches code blocks with or without language identifiers
+    let re = Regex::new(r"```.*?```").unwrap();
+    re.replace_all(s, "").to_string()
+}
+
+
 pub fn extract_links(contents: &str) -> Vec<WikiLink> {
     return WIKILINK_REGEX
-        .captures_iter(contents)
+        .captures_iter(&remove_code_blocks(contents))
         .map(|captures| parse_wikilink(captures.get(2).unwrap().as_str()))
         .filter(|wikilink| wikilink.as_ref().ok().is_some())
         .map(|wikilink| wikilink.unwrap())

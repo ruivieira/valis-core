@@ -26,9 +26,9 @@ impl GitOperations for SimpleRepo {
     }
 }
 
-fn get_git_project_root_path() -> Option<PathBuf> {
+pub fn get_git_project_root_path(path: PathBuf) -> Option<PathBuf> {
     let empty_string_vec: Vec<String> = Vec::new();
-    let repo = Repository::open_ext(".", RepositoryOpenFlags::empty(), empty_string_vec).ok()?;
+    let repo = Repository::open_ext(path, RepositoryOpenFlags::empty(), empty_string_vec).ok()?;
     let workdir = repo.workdir()?;
     Some(workdir.to_path_buf())
 }
@@ -39,7 +39,7 @@ fn get_git_project_root_path() -> Option<PathBuf> {
 /// # Returns
 /// A string slice that holds the full path of the file.
 pub fn from_root(partial_path: &str) -> Option<String> {
-    if let Some(root_path) = get_git_project_root_path() {
+    if let Some(root_path) = get_git_project_root_path(PathBuf::from(".")) {
         let full_path = Path::new(&root_path).join(partial_path);
         if let Some(full_path_str) = full_path.to_str() {
             return Some(full_path_str.to_owned());

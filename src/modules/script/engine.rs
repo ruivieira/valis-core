@@ -18,7 +18,7 @@ use crate::modules::log::ack;
 use crate::modules::notes::markdown;
 use crate::modules::notes::markdown::Page;
 use crate::modules::projects::{agile, git};
-use crate::modules::projects::git::{GitOperations, SimpleRepo};
+use crate::modules::projects::git::core::{GitOperations, SimpleRepo};
 use crate::modules::tasks::todoist;
 
 /// Remove she-bang comment lines from a script
@@ -143,7 +143,7 @@ pub fn prepare_context(ctx: &Context) {
     globals.set("from_home", from_home).unwrap();
     let git_from_root = ctx
         .create_function(|_, path: String| {
-            return git::from_root(&path).ok_or_else(|| {
+            return git::core::from_root(&path).ok_or_else(|| {
                 LuaError::RuntimeError("Could not get path from git root".to_string())
             });
         })
@@ -190,6 +190,7 @@ pub fn prepare_context(ctx: &Context) {
     agile::lua::agile_create_project(ctx);
     agile::lua::agile_create_sprint(ctx);
     agile::lua::agile_show_sprint(ctx);
+    git::lua::_get_git_project_root_path(ctx);
 }
 
 /// Execute a script.
@@ -200,6 +201,8 @@ pub fn execute(script: &str) -> Result<()> {
 
     lua.context(|lua_ctx| {
         prepare_context(&lua_ctx);
+        let prelude = include_str!("prelude.lua");
+        lua_ctx.load(prelude).exec().unwrap();
         lua_ctx.load(&remove_comment_lines(script)).exec().unwrap();
         Ok(())
     })

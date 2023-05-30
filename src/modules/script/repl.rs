@@ -1,12 +1,12 @@
 use std::borrow::Cow::{self, Borrowed, Owned};
 
 use rlua::Lua;
+use rustyline::{CompletionType, Config, EditMode, Editor, Helper};
 use rustyline::completion::{Candidate, Completer};
+use rustyline::Context;
 use rustyline::highlight::Highlighter;
 use rustyline::hint::Hinter;
 use rustyline::validate::Validator;
-use rustyline::Context;
-use rustyline::{CompletionType, Config, EditMode, Editor, Helper};
 
 use crate::modules::script::engine::prepare_context;
 
@@ -109,6 +109,8 @@ pub fn repl() {
     let lua = Lua::new();
     lua.context(|lua_ctx| {
         prepare_context(&lua_ctx);
+        let prelude = include_str!("prelude.lua");
+        lua_ctx.load(prelude).exec().unwrap();
     });
 
     loop {

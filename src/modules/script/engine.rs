@@ -191,6 +191,7 @@ pub fn prepare_context(ctx: &Context) {
     agile::lua::agile_create_sprint(ctx);
     agile::lua::agile_show_sprint(ctx);
     git::lua::_get_git_project_root_path(ctx);
+    git::lua::_get_git_project_branches(ctx);
 }
 
 /// Execute a script.

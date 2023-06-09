@@ -32,7 +32,16 @@ pulldown-cmark = "0.8.0"
 indicatif = "0.16.2"
 regex = "1.5.4"
 sea-orm = "0.2"
-reqwest = { version = "0.11.16", features = ["serde_json"] }
+reqwest = { version = "0.11.16", features = ["serde_json", "blocking", "json"] }
 rusqlite = "0.29.0"
 chrono = "0.4.24"
 uuid = { version = "1.3.2", features = ["serde", "v4"] }
+clap = "3.0"
+
+[[bin]]
+name = "valis_cli"
+path = "src/main.rs"
+
+[lib]
+name = "valis_core"
+path = "src/lib.rs"

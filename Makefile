@@ -1,10 +1,12 @@
-.PHONY: build
+.PHONY: all build install
+
+all: build install
+
 build:
 	@echo "Building the CLI..."
 	@cargo build --release
 	@echo "Build complete."
 
-.PHONY: install
 install: build
 	@echo "Copying the binary to the destination..."
 	@mkdir -p ~/emacs.d/valis/

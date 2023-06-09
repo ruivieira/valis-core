@@ -1,8 +1,10 @@
-use clap::{App, Arg, SubCommand};
 use std::env;
+
+use clap::{App, Arg, SubCommand};
+use dirs;
+
+use valis_core::modules::admin::authinfo;
 use valis_core::modules::projects::git::github;
-
-
 
 fn main() {
     let matches = App::new("my_app")
@@ -27,8 +29,12 @@ fn main() {
 
     if let Some(projects) = matches.subcommand_matches("projects") {
         if let Some(github) = projects.subcommand_matches("github") {
-            let user = env::var("GITHUB_USERNAME").expect("GITHUB_USERNAME must be set");
-            let token = env::var("GITHUB_TOKEN").expect("GITHUB_TOKEN must be set");
+            let mut authinfo_file = dirs::home_dir().unwrap();
+            authinfo_file.push(".authinfo");
+            let authinfos = authinfo::read_auth_file(&authinfo_file).unwrap();
+            let githubAuth = authinfo::find_auth_info_for_machine("api.github.com", authinfos).get(0).cloned().unwrap();
+            let user = githubAuth.login.name.to_owned();
+            let token = githubAuth.password.to_owned();
 
             if let Some(get_milestones) = github.subcommand_matches("get-milestones") {
                 let org = get_milestones.value_of("ORG").unwrap();

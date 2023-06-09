@@ -1,7 +1,8 @@
 use std::collections::HashMap;
 use std::env;
-use serde::Deserialize;
+
 use reqwest::header;
+use serde::Deserialize;
 
 #[derive(Deserialize)]
 struct Milestone {

@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":[["get_files","Return a list of `Matcher` objects that match the given pattern."],["get_os","Return the OS name on which we are running."],["in_path","Check if a program is in the PATH."],["run","Run a command string and outputs realtime output to stdout."],["run_buffered",""]]};

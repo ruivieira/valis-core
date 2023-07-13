@@ -1,0 +1,21 @@
+[package]
+name = "valis-core-python"
+version = "0.1.9"
+edition = "2021"
+exclude = [
+    ".idea/*",
+    "docs/*"
+]
+license-file = "LICENSE"
+description = "A library for workflow management"
+homepage = "https://github.com/ruivieira/valis-core"
+repository = "https://github.com/ruivieira/valis-core"
+readme = "README.md"
+
+[lib]
+name = "valis_core_python"
+crate-type = ["cdylib"]
+
+[dependencies]
+valis-core = { path = "../valis_core" }
+pyo3 = { version = "0.19.1", features = ["extension-module"] }

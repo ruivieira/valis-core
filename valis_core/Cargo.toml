@@ -1,0 +1,48 @@
+[package]
+name = "valis-core"
+version = "0.1.9"
+edition = "2021"
+exclude = [
+    ".idea/*",
+    "docs/*"
+]
+license-file = "LICENSE"
+description = "A library for workflow management"
+homepage = "https://github.com/ruivieira/valis-core"
+repository = "https://github.com/ruivieira/valis-core"
+readme = "README.md"
+
+[dependencies]
+globmatch = "0.2.3"
+git2 = "0.17.1"
+home = "0.5.4"
+lazy_static = "1.4.0"
+rlua = { version = "0.19.4", features = ["builtin-lua54"] }
+colored = "2"
+tokio = { version = "1", features = ["full"] }
+serde_json = "1.0"
+rustyline = "8.0.0"
+kdbx-rs = "0.4.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_yaml = "0.8"
+termion = "1.5.6"
+dirs = "5.0.1"
+walkdir = "2.3.2"
+pulldown-cmark = "0.8.0"
+indicatif = "0.16.2"
+regex = "1.5.4"
+sea-orm = "0.2"
+reqwest = { version = "0.11.16", features = ["serde_json", "blocking", "json"] }
+rusqlite = "0.29.0"
+chrono = "0.4.24"
+uuid = { version = "1.3.2", features = ["serde", "v4"] }
+clap = "3.0"
+
+
+[[bin]]
+name = "valis_cli"
+path = "src/main.rs"
+
+[lib]
+name = "valis_core"
+path = "src/lib.rs"

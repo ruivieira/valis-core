@@ -47,8 +47,15 @@ pub fn backup(s3: &S3Endpoint, locations: &Vec<PathBuf>) {
     ));
     kopia_connect_s3(s3);
     locations.into_iter().for_each(|location| {
-        run(
-            &format!("kopia snapshot create {} ", location.to_str().unwrap()),
-        )
+        create_snapshot(location)
     })
+}
+
+/// Create a snapshot of a given location using Kopia.
+///
+/// # Arguments
+///
+/// * `location` - A location to create snapshot.
+pub fn create_snapshot(location: &PathBuf) {
+    run(&format!("kopia snapshot create {} ", location.to_str().unwrap()))
 }

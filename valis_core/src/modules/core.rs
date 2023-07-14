@@ -1,13 +1,12 @@
+use std::{env, fs};
 use std::io::BufRead;
 use std::io::BufReader;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::process::Stdio;
-use std::{env, fs};
-
-use globmatch::Matcher;
 
 use dirs;
+use globmatch::Matcher;
 
 /// Run a command string and outputs realtime output to stdout.
 ///
@@ -115,4 +114,22 @@ pub fn from_home(partial_path: &str) -> Option<String> {
         }
     }
     None
+}
+
+/// Return the full path of a file in the user's home directory.
+/// # Arguments
+/// * `partial_path` - A string slice that holds the partial path of the file.
+pub fn to_path_buf(path: &str) -> Option<PathBuf> {
+    if path.starts_with("~") {
+        if let Some(mut home_path) = dirs::home_dir() {
+            if path.len() > 1 {
+                home_path.push(&path[1..]);
+            }
+            Some(home_path)
+        } else {
+            None
+        }
+    } else {
+        Some(Path::new(path).to_path_buf())
+    }
 }

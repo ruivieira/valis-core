@@ -7,7 +7,7 @@ packages:
   - cargo
   - libssl-dev
   - pkg-config
-  - sqlite-dev
+  - libsqlite3-dev
 sources:
   - https://git.sr.ht/~ruivieira/valis-core
 tasks:

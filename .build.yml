@@ -1,15 +1,22 @@
-image: debian/bookworm
+image: debian/bullseye
 packages:
+  - curl
   - python3
   - python3-pip
   - python3-venv
   - cargo
+  - libssl-dev
+  - pkg-config
 sources:
   - https://git.sr.ht/~ruivieira/valis-core
 tasks:
   - setup: |
+      curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+      source $HOME/.cargo/env
+      rustup update
       cd valis-core/valis_core
       cargo build
   - test: |
+      source $HOME/.cargo/env
       cd valis-core/valis_core
       cargo test

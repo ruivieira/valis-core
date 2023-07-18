@@ -1,8 +1,6 @@
 use std::env;
-use std::str::FromStr;
 
-use rlua::{Context, Error, ExternalError, Lua};
-use rlua::prelude::LuaError;
+use rlua::{Context, Error};
 use tokio::runtime::Runtime;
 use uuid::Uuid;
 
@@ -39,12 +37,14 @@ pub fn todoist_add_task_to_sprint(ctx: &Context) {
                     println!("Sprint id: {}", sprint_id);
                     match add_task_to_sprint(&db, &sprint_uuid, task_id) {
                         Ok(()) => Ok(()),
-                        Err(e) => Err(Error::RuntimeError("Could not save task to Sprint".to_string()))
+                        Err(e) => Err(Error::RuntimeError(
+                            "Could not save task to Sprint".to_string(),
+                        )),
                     }
                 }
-                Err(e) => {
-                    Err(Error::RuntimeError("Error parsiong Sprint UUID".to_string()))
-                }
+                Err(e) => Err(Error::RuntimeError(
+                    "Error parsiong Sprint UUID".to_string(),
+                )),
             }
         })
         .unwrap();

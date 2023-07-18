@@ -1,13 +1,13 @@
-use std::{env, path::PathBuf};
+use std::path::PathBuf;
 
 use git2::Repository;
 
 #[derive(Debug)]
 pub struct VirtualEnv {
-    name: String,
-    location: PathBuf,
-    root: PathBuf,
-    requirements: PathBuf,
+    pub name: String,
+    pub location: PathBuf,
+    pub root: PathBuf,
+    pub requirements: PathBuf,
 }
 
 /// Returns a `VirtualEnv` struct for the specified `PathBuf` path.
@@ -35,8 +35,50 @@ pub fn get_venv_info(path: PathBuf) -> VirtualEnv {
     return virtualenv;
 }
 
+/// Rebuilds the virtualenv for the current project at `path`.
+/// Assumes that the virtualenvs are located in `~/.virtualenvs` and that the virtualenv name is the same as the project name.
+/// # Arguments
+/// * `path` - A `PathBuf` object that holds the path to the project root.
 pub fn rebuild(venv: VirtualEnv) {
-    // delete the original environment
+    // Check if virtualenv exists
+    if venv.location.exists() {
+        // Delete the original environment
+        let _ = std::fs::remove_dir_all(&venv.location);
+    }
+
+    // Recreate it
+    let output = std::process::Command::new("python3")
+        .arg("-m")
+        .arg("venv")
+        .arg(&venv.location)
+        .output()
+        .expect("Failed to create virtualenv");
+
+    if !output.status.success() {
+        eprintln!(
+            "Failed to create virtualenv: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        return;
+    }
+
+    // Install requirements.txt if it exists
+    if venv.requirements.exists() {
+        let output = std::process::Command::new("pip")
+            .arg("install")
+            .arg("-r")
+            .arg(&venv.requirements)
+            .output()
+            .expect("Failed to install requirements");
+
+        if !output.status.success() {
+            eprintln!(
+                "Failed to install requirements: {}",
+                String::from_utf8_lossy(&output.stderr)
+            );
+            return;
+        }
+    }
 }
 
 /// Prints the status of the virtualenv for the current project at `path`.

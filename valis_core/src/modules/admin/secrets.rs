@@ -1,5 +1,3 @@
-use std::fs::File;
-use std::io::BufReader;
 use std::path::PathBuf;
 
 use kdbx_rs;
@@ -18,8 +16,8 @@ pub fn read_fields_from_entry(
     secrets: Vec<Secret>,
 ) -> Result<Vec<Option<String>>, Box<dyn std::error::Error>> {
     // Open the KDBX file
-    let file = File::open(kdbx_file_path).unwrap();
-    let reader = BufReader::new(file);
+    // let file = File::open(kdbx_file_path).unwrap();
+    // let reader = BufReader::new(file);
 
     // Create a composite key using the provided password
     let composite_key = CompositeKey::from_password(&password);

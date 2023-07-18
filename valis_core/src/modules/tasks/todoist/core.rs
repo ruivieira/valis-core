@@ -1,7 +1,6 @@
-use std::error::Error;
 use std::result::Result;
 
-use rusqlite::{Connection, params, Row};
+use rusqlite::{params, Connection, Row};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -36,7 +35,10 @@ impl DatabaseOperations<String> for Task {
         todo!()
     }
 
-    fn get(id: String, db: &str) -> Result<Self, rusqlite::Error> where Self: Sized {
+    fn get(id: String, db: &str) -> Result<Self, rusqlite::Error>
+    where
+        Self: Sized,
+    {
         todo!()
     }
 
@@ -83,12 +85,15 @@ impl DatabaseOperations<String> for Task {
         Ok(tasks)
     }
 
-    fn map(row: &Row<'_>) -> Result<Self, rusqlite::Error> where Self: Sized {
+    fn map(row: &Row<'_>) -> Result<Self, rusqlite::Error>
+    where
+        Self: Sized,
+    {
         todo!()
     }
 }
 
-fn get_task_by_id(db: &str, id: String) -> Result<Task, std::fmt::Error> {
+pub fn get_task_by_id(db: &str, id: String) -> Result<Task, std::fmt::Error> {
     let conn = get_connection(db);
 
     let mut stmt = conn
@@ -244,7 +249,11 @@ fn sync_to_db(tasks: &Vec<Task>, db: &str) -> rusqlite::Result<()> {
     Ok(())
 }
 
-pub fn add_task_to_sprint(db: &str, sprint_id: &Uuid, task_id: String) -> Result<(), rusqlite::Error> {
+pub fn add_task_to_sprint(
+    db: &str,
+    sprint_id: &Uuid,
+    task_id: String,
+) -> Result<(), rusqlite::Error> {
     let conn = get_connection(db);
     conn.execute(
         "INSERT INTO sprint_todoist_task (sprint_id, todoist_task_id) VALUES (?1, ?2)",

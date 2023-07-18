@@ -1,11 +1,6 @@
-use std::env;
 use std::path::PathBuf;
-use std::str::FromStr;
 
-use rlua::{Context, Error, ExternalError, Lua};
-use rlua::prelude::LuaError;
-use tokio::runtime::Runtime;
-use uuid::Uuid;
+use rlua::{Context, Error};
 
 use crate::modules::projects::git::core;
 

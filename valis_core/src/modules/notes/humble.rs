@@ -1,14 +1,10 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::fs;
-use std::fs::{copy, File};
-use std::io::{Read, Write};
+
 use std::path::{Path, PathBuf};
 
 use indicatif::{ProgressBar, ProgressStyle};
-use pulldown_cmark::{Event, Parser, Tag};
 use regex::Regex;
-use serde::Deserialize;
-use walkdir::{DirEntry, WalkDir};
 
 use crate::modules::notes::markdown;
 use crate::modules::notes::markdown::{Page, PageLoader, WikilinkType};

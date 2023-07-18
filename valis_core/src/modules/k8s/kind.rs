@@ -1,7 +1,5 @@
 use std::path::PathBuf;
 
-use rlua::{Context, Table};
-
 use super::super::core;
 
 // use crate::modules::script::engine::FromLuaTable;

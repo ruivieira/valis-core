@@ -1,24 +1,19 @@
-use std::env;
 use std::path::PathBuf;
 
-use rlua::{Context, Lua, Result, ToLua, UserData, Value};
 use rlua::Error as LuaError;
-use rlua::FromLua;
-use rlua::Table;
-use termion::color;
-use tokio::runtime::Runtime;
-use uuid::Uuid;
 
-use crate::modules::{core, db};
-use crate::modules::db::DatabaseOperations;
-use crate::modules::db::serializers::SerializableDateTime;
+use rlua::Table;
+use rlua::{Context, Lua, Result, Value};
+use termion::color;
+
+use crate::modules::core;
 use crate::modules::formats::text;
 use crate::modules::formats::yaml::{get_yaml_value, update_yaml_value};
 use crate::modules::log::ack;
 use crate::modules::notes::markdown;
 use crate::modules::notes::markdown::Page;
-use crate::modules::projects::{agile, git};
 use crate::modules::projects::git::core::{GitOperations, SimpleRepo};
+use crate::modules::projects::{agile, git};
 use crate::modules::tasks::todoist;
 
 /// Remove she-bang comment lines from a script
@@ -180,9 +175,7 @@ pub fn prepare_context(ctx: &Context) {
         .unwrap();
     globals.set("md_load", md_load).unwrap();
     let pprint = ctx
-        .create_function(|_, table: Table| {
-            pretty_print_table(&table, 2)
-        })
+        .create_function(|_, table: Table| pretty_print_table(&table, 2))
         .unwrap();
     globals.set("pprint", pprint).unwrap();
     todoist::lua::todoist_sync(ctx);

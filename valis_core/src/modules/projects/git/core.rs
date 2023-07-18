@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 
-use git2::{Branches, Error, Repository, RepositoryOpenFlags};
+use git2::{Error, Repository, RepositoryOpenFlags};
 
 pub struct SimpleRepo {
     pub url: String,
@@ -42,7 +42,6 @@ pub fn get_git_project_branches(path: PathBuf) -> Result<Vec<String>, Error> {
 
     Ok(branch_names)
 }
-
 
 pub fn get_git_project_root_path(path: PathBuf) -> Option<PathBuf> {
     let empty_string_vec: Vec<String> = Vec::new();

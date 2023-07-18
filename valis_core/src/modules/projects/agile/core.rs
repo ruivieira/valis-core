@@ -1,8 +1,7 @@
 use std::fmt::Error;
 
 use chrono::{DateTime, Utc};
-use rusqlite::{Connection, params, Result, Row};
-use rusqlite::types::{FromSql, ValueRef};
+use rusqlite::{params, Connection, Result, Row};
 use serde::{Deserialize, Serialize};
 use termion::{color, style};
 use uuid::Uuid;
@@ -10,7 +9,7 @@ use uuid::Uuid;
 use db::DatabaseOperations;
 
 use crate::modules::db;
-use crate::modules::db::{get_connection, serializers};
+use crate::modules::db::get_connection;
 use crate::modules::db::serializers::SerializableDateTime;
 use crate::modules::tasks::todoist::core::Task as TodoisTask;
 
@@ -38,7 +37,10 @@ impl DatabaseOperations<String> for Project {
         Ok(())
     }
 
-    fn get(id: String, db: &str) -> Result<Self, rusqlite::Error> where Self: Sized {
+    fn get(_id: String, _db: &str) -> Result<Self, rusqlite::Error>
+    where
+        Self: Sized,
+    {
         todo!()
     }
 
@@ -68,7 +70,10 @@ impl DatabaseOperations<String> for Project {
         Ok(projects)
     }
 
-    fn map(row: &Row<'_>) -> std::result::Result<Self, rusqlite::Error> where Self: Sized {
+    fn map(row: &Row<'_>) -> std::result::Result<Self, rusqlite::Error>
+    where
+        Self: Sized,
+    {
         todo!()
     }
 }
@@ -112,7 +117,10 @@ impl DatabaseOperations<String> for Sprint {
         Ok(())
     }
 
-    fn get(id: String, db: &str) -> Result<Self, rusqlite::Error> where Self: Sized {
+    fn get(id: String, db: &str) -> Result<Self, rusqlite::Error>
+    where
+        Self: Sized,
+    {
         let conn = get_connection(db);
         let mut query = conn.prepare("SELECT * FROM sprint WHERE id = ?")?;
 
@@ -123,8 +131,7 @@ impl DatabaseOperations<String> for Sprint {
     fn get_all(db: &str) -> Result<Vec<Sprint>, rusqlite::Error> {
         let conn = Connection::open(db)?;
         let mut stmt = conn.prepare("SELECT * FROM sprint")?;
-        let rows = stmt
-            .query_map((), Sprint::map)?;
+        let rows = stmt.query_map((), Sprint::map)?;
 
         let mut sprints = Vec::new();
         for sprint_res in rows {
@@ -133,7 +140,10 @@ impl DatabaseOperations<String> for Sprint {
 
         Ok(sprints)
     }
-    fn map(row: &Row<'_>) -> Result<Self, rusqlite::Error> where Self: Sized {
+    fn map(row: &Row<'_>) -> Result<Self, rusqlite::Error>
+    where
+        Self: Sized,
+    {
         let id: String = row.get(0)?;
         let project_id: String = row.get(1)?;
         let start_date: String = row.get(3)?;
@@ -180,7 +190,7 @@ impl Default for Sprint {
 }
 
 impl Sprint {
-    fn is_active(&self) -> bool {
+    pub fn is_active(&self) -> bool {
         let now = Utc::now();
         self.start_date.get_utc() <= now && now <= self.end_date.get_utc()
     }
@@ -243,21 +253,57 @@ pub fn print_sprint_info(db: &str, sprint_id: Uuid) -> Result<()> {
     let conn = get_connection(db);
     let sprint_info = Sprint::get(sprint_id.to_string(), db).ok().unwrap();
 
-    println!("\n{}{}Sprint Information{}", style::Bold, color::Fg(color::Blue), style::Reset);
-    println!("{}ID:{} {}", color::Fg(color::Green), style::Reset, sprint_info.id.to_string());
-    println!("{}Name:{} {}", color::Fg(color::Green), style::Reset, sprint_info.name);
-    println!("{}Start Date:{} {}", color::Fg(color::Green), style::Reset, sprint_info.start_date.get_utc().to_string());
-    println!("{}End Date:{} {}", color::Fg(color::Green), style::Reset, sprint_info.end_date.get_utc().to_string());
+    println!(
+        "\n{}{}Sprint Information{}",
+        style::Bold,
+        color::Fg(color::Blue),
+        style::Reset
+    );
+    println!(
+        "{}ID:{} {}",
+        color::Fg(color::Green),
+        style::Reset,
+        sprint_info.id.to_string()
+    );
+    println!(
+        "{}Name:{} {}",
+        color::Fg(color::Green),
+        style::Reset,
+        sprint_info.name
+    );
+    println!(
+        "{}Start Date:{} {}",
+        color::Fg(color::Green),
+        style::Reset,
+        sprint_info.start_date.get_utc().to_string()
+    );
+    println!(
+        "{}End Date:{} {}",
+        color::Fg(color::Green),
+        style::Reset,
+        sprint_info.end_date.get_utc().to_string()
+    );
 
     let now = Utc::now();
-    let days_to_finish = sprint_info.end_date.get_utc().signed_duration_since(now).num_days();
-    println!("{}Days to Sprint Finish:{} {}", color::Fg(color::Green), style::Reset, days_to_finish.to_string());
+    let days_to_finish = sprint_info
+        .end_date
+        .get_utc()
+        .signed_duration_since(now)
+        .num_days();
+    println!(
+        "{}Days to Sprint Finish:{} {}",
+        color::Fg(color::Green),
+        style::Reset,
+        days_to_finish.to_string()
+    );
 
-    let mut task_query = conn.prepare("
+    let mut task_query = conn.prepare(
+        "
         SELECT task.* FROM task
         INNER JOIN sprint_todoist_task ON task.id = sprint_todoist_task.todoist_task_id
         WHERE sprint_todoist_task.sprint_id = ?
-    ")?;
+    ",
+    )?;
     let task_rows = task_query.query_map(params![sprint_id.to_string()], |row| {
         Ok(TodoisTask {
             id: row.get(0)?,
@@ -270,11 +316,31 @@ pub fn print_sprint_info(db: &str, sprint_id: Uuid) -> Result<()> {
     let tasks: Result<Vec<TodoisTask>, _> = task_rows.collect();
     match tasks {
         Ok(tasks) => {
-            println!("\n{}{}Tasks{}", style::Bold, color::Fg(color::Blue), style::Reset);
+            println!(
+                "\n{}{}Tasks{}",
+                style::Bold,
+                color::Fg(color::Blue),
+                style::Reset
+            );
             for task in tasks {
-                println!("{}Task ID:{} {}", color::Fg(color::Green), style::Reset, task.id);
-                println!("{}Content:{} {}", color::Fg(color::Green), style::Reset, task.content.unwrap_or_else(|| "None".to_string()));
-                println!("{}Labels:{} {:?}", color::Fg(color::Green), style::Reset, task.labels);
+                println!(
+                    "{}Task ID:{} {}",
+                    color::Fg(color::Green),
+                    style::Reset,
+                    task.id
+                );
+                println!(
+                    "{}Content:{} {}",
+                    color::Fg(color::Green),
+                    style::Reset,
+                    task.content.unwrap_or_else(|| "None".to_string())
+                );
+                println!(
+                    "{}Labels:{} {:?}",
+                    color::Fg(color::Green),
+                    style::Reset,
+                    task.labels
+                );
             }
         }
         Err(e) => println!("Failed to get tasks: {}", e),

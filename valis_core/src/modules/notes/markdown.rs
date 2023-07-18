@@ -2,13 +2,12 @@ use std::error::Error;
 use std::fs;
 use std::fs::File;
 use std::io::Write;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::str::FromStr;
 
 use globmatch::Matcher;
 use lazy_static::lazy_static;
 use regex::Regex;
-use rlua::{Context, Lua, Table, ToLua, ToLuaMulti};
 
 use crate::modules::core::get_files;
 use crate::modules::notes::markdown::WikilinkType::TEXT;
@@ -150,11 +149,10 @@ pub fn get_markdown_files<'a>(root: PathBuf) -> Result<Matcher<'a, PathBuf>, Str
 }
 
 pub fn remove_code_blocks(s: &str) -> String {
-// Matches code blocks with or without language identifiers
+    // Matches code blocks with or without language identifiers
     let re = Regex::new(r"```.*?```").unwrap();
     re.replace_all(s, "").to_string()
 }
-
 
 pub fn extract_links(contents: &str) -> Vec<WikiLink> {
     return WIKILINK_REGEX
@@ -318,6 +316,6 @@ mod tests {
         let filename = "foo.gif";
         assert_eq!(filename_type(filename), IMAGE);
         let filename2 = "FOO.GIF";
-        assert_eq!(filename_type(filename), IMAGE);
+        assert_eq!(filename_type(filename2), IMAGE);
     }
 }

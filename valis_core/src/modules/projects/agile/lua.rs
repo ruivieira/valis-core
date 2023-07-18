@@ -1,12 +1,10 @@
-use rlua::{Context, Lua, Result, ToLua, UserData};
-use rlua::Error as LuaError;
-use rlua::FromLua;
-use rlua::Table;
+use rlua::Context;
+
 use uuid::Uuid;
 
 use crate::modules::db;
-use crate::modules::db::DatabaseOperations;
 use crate::modules::db::serializers::SerializableDateTime;
+use crate::modules::db::DatabaseOperations;
 use crate::modules::projects::agile;
 use crate::modules::projects::agile::core::{print_sprint_info, Project};
 
@@ -42,9 +40,7 @@ pub fn agile_create_project(ctx: &Context) {
             Ok(project_table)
         })
         .unwrap();
-    ctx.globals()
-        .set("agile_create_project", f)
-        .unwrap();
+    ctx.globals().set("agile_create_project", f).unwrap();
 }
 
 pub fn agile_create_sprint(ctx: &Context) {
@@ -91,23 +87,17 @@ pub fn agile_create_sprint(ctx: &Context) {
             },
         )
         .unwrap();
-    ctx.globals()
-        .set("agile_create_sprint", f)
-        .unwrap();
+    ctx.globals().set("agile_create_sprint", f).unwrap();
 }
 
 pub fn agile_show_sprint(ctx: &Context) {
     let f = ctx
-        .create_function(
-            |ctx, (id, path): (String, String)| {
-                db::init_db(&path).ok().unwrap();
-                let id = Uuid::parse_str(&id).ok().unwrap();
-                let _ = print_sprint_info(&path, id);
-                Ok(())
-            },
-        )
+        .create_function(|_ctx, (id, path): (String, String)| {
+            db::init_db(&path).ok().unwrap();
+            let id = Uuid::parse_str(&id).ok().unwrap();
+            let _ = print_sprint_info(&path, id);
+            Ok(())
+        })
         .unwrap();
-    ctx.globals()
-        .set("agile_show_sprint", f)
-        .unwrap();
+    ctx.globals().set("agile_show_sprint", f).unwrap();
 }

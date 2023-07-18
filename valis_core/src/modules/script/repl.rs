@@ -1,12 +1,12 @@
-use std::borrow::Cow::{self, Borrowed, Owned};
+use std::borrow::Cow::{self, Borrowed};
 
 use rlua::Lua;
-use rustyline::{CompletionType, Config, EditMode, Editor, Helper};
 use rustyline::completion::{Candidate, Completer};
-use rustyline::Context;
 use rustyline::highlight::Highlighter;
 use rustyline::hint::Hinter;
 use rustyline::validate::Validator;
+use rustyline::Context;
+use rustyline::{CompletionType, Config, EditMode, Editor, Helper};
 
 use crate::modules::script::engine::prepare_context;
 

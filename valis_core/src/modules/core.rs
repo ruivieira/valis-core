@@ -1,9 +1,9 @@
-use std::{env, fs};
 use std::io::BufRead;
 use std::io::BufReader;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::process::Stdio;
+use std::{env, fs};
 
 use dirs;
 use globmatch::Matcher;
@@ -73,7 +73,7 @@ pub fn in_path(program: &str) -> bool {
 }
 
 /// Check if a directory exists.
-fn directory_exists(path: &Path) -> bool {
+pub fn directory_exists(path: &Path) -> bool {
     // Check if the directory exists.
     Path::new(path).exists()
 }

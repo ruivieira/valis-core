@@ -2,9 +2,6 @@ use std::error::Error;
 use std::fs::{File, OpenOptions};
 use std::io::{Read, Write};
 
-use rlua::{Context, Lua};
-use serde::{Deserialize, Serialize};
-use serde_yaml::Mapping;
 use serde_yaml::Value as YamlValue;
 
 fn update_yaml_value_in_place(

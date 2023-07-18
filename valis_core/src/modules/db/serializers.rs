@@ -74,7 +74,7 @@ impl SerializableDateTime {
     // Create a new SerializableDateTime from a string
     pub fn from_str(date: &str) -> Result<Self, chrono::format::ParseError> {
         let naive_date = NaiveDate::parse_from_str(date, "%Y-%m-%d")?;
-        let datetime = DateTime::from_utc(naive_date.and_hms(0, 0, 0), Utc);
+        let datetime = DateTime::from_utc(naive_date.and_hms_opt(0, 0, 0).unwrap(), Utc);
         Ok(SerializableDateTime(datetime))
     }
     pub fn get_utc(&self) -> DateTime<Utc> {

@@ -1,6 +1,4 @@
 use super::super::core;
-use lazy_static::lazy_static;
-use std::path::PathBuf;
 
 pub struct Component {
     pub name: String,
